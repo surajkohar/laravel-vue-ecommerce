@@ -21,6 +21,9 @@ class AuthController extends ApiController
      */
     public function signup(Request $request)
     {
+
+        Log::info('Request data:', $request->all());
+
         // return return response()->json($data, 200);
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -41,6 +44,8 @@ class AuthController extends ApiController
 
             return $this->respondWithSuccess('User registered successfully!', $user, 201);
         } catch (\Exception $e) {
+        dd($e);
+
             return $this->respondWithError('Failed to register user. Please try again later.', 500);
         }
     }
@@ -54,21 +59,21 @@ class AuthController extends ApiController
             'email' => 'required|string|email',
             'password' => 'required|string|min:8',
         ]);
-    
+
         if ($validator->fails()) {
             return $this->respondWithError('Validation failed', 422, $validator->errors());
         }
-    
+
         // Use the 'web' guard for authentication
         if (!Auth::guard('web')->attempt($request->only('email', 'password'))) {
             return $this->respondWithError('Invalid login credentials', 401);
         }
-    
+
         try {
             $user = Auth::user();
             // Create a token using Sanctum
             $token = $user->createToken('auth_token')->plainTextToken;
-    
+
             return $this->respondWithSuccess('Login successful', [
                 'token' => $token,
                 'user' => $user,
@@ -77,7 +82,7 @@ class AuthController extends ApiController
             return $this->respondWithError('Failed to generate token. Please try again later.', 500);
         }
     }
-    
+
 
     /**
      * Log out a user by deleting their token
@@ -169,5 +174,5 @@ class AuthController extends ApiController
         return $this->respondWithSuccess('Password reset successfully.', null, 200);
     }
 
-        
+
 }

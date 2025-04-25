@@ -1,11 +1,10 @@
-import axios from "axios";
+import axios from 'axios';
+import { API_BASE_URL } from '@/utils/config';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/",
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: API_BASE_URL,
 });
 
-export default api;
+export const signup = (data) => {
+  return api.post('/signup', data);
+};
