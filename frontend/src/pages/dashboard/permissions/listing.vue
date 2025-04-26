@@ -8,17 +8,17 @@
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          Add
+          Add Product
         </button>
         <!-- filter -->
-        <div class="custom-dropdown">
+        <div class="dropdown">
             <button class="filter-button" @click="toggleDropdown">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
               Filters
             </button>
-          <div class="custom-dropdown-menu" v-show="showDropdown">
+          <div class="dropdown-menu" v-show="showDropdown">
             <div class="dropdown-content">
               <!-- Close button added here -->
               <button class="close-dropdown" @click="toggleDropdown">
@@ -52,9 +52,9 @@
         </div>
       </div>
     </div>
-    <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex justify-content-between align-items-center">
        <div>
-        <h6>This is products listing!</h6>
+        <h4>This is products listing!</h4>
        </div>
         <div class="search-container">
           <input type="text" v-model="filters.search" placeholder="Search products..." class="search-input">

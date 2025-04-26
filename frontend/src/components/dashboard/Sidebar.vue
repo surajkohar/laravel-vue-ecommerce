@@ -49,6 +49,29 @@
           </svg>
           <span>Users</span>
         </RouterLink>
+
+        <RouterLink
+          to="/admin/roles"
+          @click="handleLinkClick"
+          :class="{ active: isActive('/admin/roles')}"
+        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+          <span>Roles</span>
+        </RouterLink>
+
+        <RouterLink
+          to="/admin/permissions"
+          @click="handleLinkClick"
+          :class="{ active: isActive('/admin/permissions')}"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+        </svg>
+          <span>Permissions</span>
+        </RouterLink>
   
         <RouterLink
           to="#"

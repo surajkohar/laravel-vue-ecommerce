@@ -32,4 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/roles/{id}/assign-permission', [PermissionController::class, 'assignPermission']);
     Route::post('/roles/{id}/remove-permission', [PermissionController::class, 'removePermission']);
     Route::get('/roles/{id}/permissions', [PermissionController::class, 'listPermissions']);
+
+    Route::get('/rolesAndPermissions', [RoleController::class, 'fetchRolePermission']);
+
 });
