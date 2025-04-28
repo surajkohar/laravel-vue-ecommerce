@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
-
+use App\Http\Controllers\UsersController;
 
 Route::post('/signup', [AuthController::class, 'signup']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/permissions/{id}', [PermissionController::class, 'edit']);
     Route::put('/permissions/{id}', [PermissionController::class, 'update']);
     Route::delete('/permissions/{id}', [PermissionController::class, 'deletePermission']);
+    Route::get('/rolesAndPermissions', [RoleController::class, 'fetchRolePermission']);
 
     Route::post('/users/{id}/assign-role', [RoleController::class, 'assignRole']);
     Route::post('/users/{id}/remove-role', [RoleController::class, 'removeRole']);
@@ -33,6 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/roles/{id}/remove-permission', [PermissionController::class, 'removePermission']);
     Route::get('/roles/{id}/permissions', [PermissionController::class, 'listPermissions']);
 
-    Route::get('/rolesAndPermissions', [RoleController::class, 'fetchRolePermission']);
+    Route::post('/user/add', [UsersController::class, 'create']);
+    Route::get('/users', [UsersController::class, 'index']);
+    Route::get('/user/{id}/edit', [UsersController::class, 'edit']);
+    Route::put('/user/{id}/update', [UsersController::class, 'update']);
+
 
 });

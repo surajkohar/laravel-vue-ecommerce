@@ -12,13 +12,56 @@ use Illuminate\Support\Facades\Log;
 
 class PermissionController extends ApiController
 {
-    public function index()
+    public function index(Request $request)
     {
-        $permissions = Permission::all();
-        return response()->json([
-            "status" => true,
-            'permissions' => $permissions
-        ], 200);
+        try {
+            // Log::info('Filters:', $request->query());
+
+            $filters = $request->query();
+            $query = Permission::query();
+
+            // Apply search filter
+            if (isset($filters['search']) && !empty($filters['search'])) {
+                $query->where(function ($q) use ($filters) {
+                    $q->where('name', 'like', '%' . $filters['search'] . '%')
+                        ->orWhere('id', 'like', '%' . $filters['search'] . '%');
+                });
+            }
+
+            // Apply date range filter
+            if (isset($filters['createdFrom']) && !empty($filters['createdFrom'])) {
+                $query->where('created_at', '>=', $filters['createdFrom']);
+            }
+
+            if (isset($filters['createdTo']) && !empty($filters['createdTo'])) {
+                $query->where('created_at', '<=', $filters['createdTo'] . ' 23:59:59');
+            }
+
+            // Apply sorting
+            $sortField = $filters['sort_field'] ?? 'id';
+            $sortDirection = $filters['sort_direction'] ?? 'asc';
+            $query->orderBy($sortField, $sortDirection);
+
+            // Paginate results
+            $perPage = $filters['per_page'] ?? 10;
+            $roles = $query->paginate($perPage);
+
+            return response()->json([
+                'status' => true,
+                'data' => $roles->items(),
+                'meta' => [
+                    'current_page' => $roles->currentPage(),
+                    'last_page' => $roles->lastPage(),
+                    'per_page' => $roles->perPage(),
+                    'total' => $roles->total(),
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to fetch roles. Please try again later.'
+            ], 500);
+        }
     }
 
     public function create(Request $request)
@@ -33,7 +76,6 @@ class PermissionController extends ApiController
         $permission = Permission::create([
             'name' => $request->input('name'),
             'guard_name' => 'web'
-
         ]);
         return response()->json([
             'status' => true,

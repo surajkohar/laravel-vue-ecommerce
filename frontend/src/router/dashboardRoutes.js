@@ -60,6 +60,21 @@ const dashboardRoutes = [
         name: 'ProductEditPage',
         component: () => import('@/pages/dashboard/products/edit.vue'),  // Product edit page
       },
+      {
+        path: 'users',
+        name: 'users.listing',
+        component: () => import('@/pages/dashboard/users/listing.vue'),  
+      },
+      {
+        path: 'user/add',
+        name: 'users.add',
+        component: () => import('@/pages/dashboard/users/add.vue'),  
+      },
+      {
+        path: 'user/:id/edit',
+        name: 'user.edit',
+        component: () => import('@/pages/dashboard/users/edit.vue'),  
+      },
     ]
   }
 ]

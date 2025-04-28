@@ -84,7 +84,7 @@ class RoleController extends ApiController
 
         $role = Role::create([
             'name' => $request->input('name'),
-            'guard_name' => 'sanctum',
+            'guard_name' => 'web',
             'status' => $request->input('status'),
         ]);
 
@@ -109,7 +109,7 @@ class RoleController extends ApiController
             'name' => 'required|string|unique:roles,name,' . $id,
             'permissions' => 'required|array',
             'permissions.*' => 'exists:permissions,id',
-            'status' => 'required|in:0,1', 
+            'status' => 'required|in:0,1',
         ], [
             'permissions.required' => 'Permission is required, select at least one.',
         ]);

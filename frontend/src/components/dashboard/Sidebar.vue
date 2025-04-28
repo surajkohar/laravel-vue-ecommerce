@@ -37,9 +37,9 @@
         </RouterLink>
 
         <RouterLink
-          to="/admin/products"
+          to="/admin/users"
           @click="handleLinkClick"
-          :class="{ active: isActive('/admin/users')}"
+          :class="{ active: isActive('/admin/users') || isActive('/admin/user/add') || isActive('/admin/user/' + $route.params.id + '/edit')}"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -53,7 +53,7 @@
         <RouterLink
           to="/admin/roles"
           @click="handleLinkClick"
-          :class="{ active: isActive('/admin/roles')}"
+          :class="{ active: isActive('/admin/roles') || isActive('/admin/role/add') || isActive('/admin/role/' + $route.params.id + '/edit')}"
         >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
