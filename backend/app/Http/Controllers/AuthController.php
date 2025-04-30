@@ -73,10 +73,12 @@ class AuthController extends ApiController
             $user = Auth::user();
             // Create a token using Sanctum
             $token = $user->createToken('auth_token')->plainTextToken;
+            $permissions = $user->getAllPermissions()->pluck('name')->toArray();
 
             return $this->respondWithSuccess('Login successful', [
                 'token' => $token,
                 'user' => $user,
+                'permissions' => $permissions,
             ], 200);
         } catch (\Exception $e) {
             return $this->respondWithError('Failed to generate token. Please try again later.', 500);
