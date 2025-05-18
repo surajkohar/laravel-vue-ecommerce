@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Admin\Products\ProductCategoriesController;
+use App\Http\Controllers\Admin\SizeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UsersController;
+use App\Models\Admin\Products;
 
 Route::post('/signup', [AuthController::class, 'signup']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -38,6 +41,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UsersController::class, 'index']);
     Route::get('/user/{id}/edit', [UsersController::class, 'edit']);
     Route::put('/user/{id}/update', [UsersController::class, 'update']);
+
+    Route::get('/sizes',[SizeController::class,'index']);
+    Route::post('/sizes/add',[SizeController::class,'add']);
+
+
+    require_once __DIR__ . '/product.php';
+    require_once __DIR__ . '/productCategory.php';
+    require_once __DIR__ . '/productSubCategory.php';
+
 
 
 });

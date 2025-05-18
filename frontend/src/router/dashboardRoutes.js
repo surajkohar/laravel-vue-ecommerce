@@ -75,6 +75,18 @@ const dashboardRoutes = [
         meta: { permission: 'delete product' }
       },
       {
+        path: 'sizes',
+        name: 'sizes.listing',
+        component: () => import('@/pages/dashboard/sizes/listing.vue'), 
+        meta: { permission: 'view sizes' }
+      },
+      {
+        path: 'sizes/add',
+        name: 'sizes.add',
+        component: () => import('@/pages/dashboard/sizes/add.vue'), 
+        meta: { permission: 'add sizes' }
+      },
+      {
         path: 'users',
         name: 'users.listing',
         component: () => import('@/pages/dashboard/users/listing.vue'),  
@@ -92,6 +104,12 @@ const dashboardRoutes = [
         name: 'user.edit',
         component: () => import('@/pages/dashboard/users/edit.vue'),  
         meta: { permission: 'edit user' }
+      },
+            {
+        path: 'product-category',
+        name: 'productCategory',
+        component: () => import('@/pages/dashboard/productCategory/listing.vue'),  
+        // meta: { permission: 'edit user' }
       },
     ]
   }

@@ -43,9 +43,7 @@
           active: isActive('/admin/products') || isActive('/admin/product/add'),
         }"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
+        <svg xmlns="http://www.w3.org/2000/svg" width="16"
           height="16"
           viewBox="0 0 24 24"
           fill="none"
@@ -58,6 +56,51 @@
           <path d="M3 9h18M9 21V9"></path>
         </svg>
         <span>Products</span>
+      </RouterLink>
+
+      <RouterLink
+        v-if="hasPermission('view products')"
+        to="/admin/product-Category"
+        @click="handleLinkClick"
+        :class="{
+          active: isActive('/admin/product-Category') || isActive('/admin/product/add'),
+        }"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M3 9h18M9 21V9"></path>
+        </svg>
+        <span>Product Category</span>
+      </RouterLink>
+
+      <RouterLink
+        to="/admin/sizes"
+        @click="handleLinkClick"
+        :class="{
+          active: isActive('/admin/sizes') || isActive('/admin/sizes/add'),
+        }"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M3 9h18M9 21V9"></path>
+        </svg>
+        <span>Sizes</span>
       </RouterLink>
 
       <RouterLink

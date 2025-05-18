@@ -1,6 +1,6 @@
 <template>
     <div class="dashboard-home">
-      <h1>Welcome to Admin Dashboard</h1>
+      <h4>Welcome to Admin Dashboard</h4>
   
       <div class="stats-grid">
         <div class="stat-card">
@@ -21,6 +21,7 @@
   
   <script setup>
   // Fetch actual stats from API in future
+
   </script>
   
   <style scoped>

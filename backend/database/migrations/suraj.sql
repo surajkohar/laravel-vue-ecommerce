@@ -33,3 +33,11 @@ INSERT INTO `permissions` (`name`, `status`, `guard_name`, `created_at`, `update
 
 ALTER TABLE `users`
 ADD `is_admin` int NULL AFTER `phone`;
+
+CREATE TABLE `sizes` (
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `type` varchar(255) NULL,
+  `size_title` varchar(100) NOT NULL,
+  `created` timestamp NULL,
+  `modified` timestamp NULL
+);
