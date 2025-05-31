@@ -1,9 +1,9 @@
 <template>
   <div class="products-listing">
     <div class="header-section">
-      <h1>Product Categories</h1>
+      <h1>Product Sub Categories</h1>
       <div class="action-buttons">
-        <button class="add-button" @click="router.push('/admin/product-category/add')">
+        <button class="add-button" @click="router.push('/admin/product-subCategory/add')">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -46,7 +46,7 @@
     
      <div class="d-flex justify-content-between align-items-center mb-2">
       <div>
-        <h6>Manage product categories</h6>
+        <h6>Manage product sub categories</h6>
       </div>
       <div class="search-container">
         <input type="text" v-model="filters.search" @input="fetchCategories" placeholder="Search categories..." class="search-input">
@@ -85,7 +85,7 @@
             </span>
           </th>
           <th @click="sortBy('title')">
-            Category Title
+            Title
             <span class="sort-icon">
               <template v-if="filters.sort_field === 'title'">
                 {{ filters.sort_direction === 'asc' ? '↑' : '↓' }}
@@ -220,7 +220,7 @@ const fetchCategories = async () => {
       if (value) queryParams.append(key, value);
     });
 
-    const response = await fetch(`${API.BACKEND_URL}/product-category?${queryParams.toString()}`, {
+    const response = await fetch(`${API.BACKEND_URL}/product-subcategories?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -311,15 +311,16 @@ const visiblePages = computed(() => {
 
 // Role actions
 const editCategory = (id) => {
-  router.push(`/admin/product-category/${id}/edit`);
+  router.push(`/admin/product-subCategory/${id}/edit`);
 };
 
 const confirmDelete = async (id) => {
   const confirmed = await confirmDialog.value.show({
-    title: 'Delete Category',
+    title: 'Delete Sub Category',
     message: 'This cannot be undone!'
   });
-      if (confirmed) {
+    if (confirmed) 
+    {
     await deleteCategory(id);
   }
 };
@@ -327,7 +328,7 @@ const confirmDelete = async (id) => {
 const deleteCategory = async (id) => {
   try {
     loading.value = true;
-    const response = await fetch(`${API.BACKEND_URL}/product-category/${id}/delete`, {
+    const response = await fetch(`${API.BACKEND_URL}/product-subcategories/${id}/delete`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -340,7 +341,7 @@ const deleteCategory = async (id) => {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to delete category');
     }
-    toast.success('Category deleted successfully!')
+    toast.success('Sub Category deleted successfully!')
     resetFilters();
     await fetchCategories();
   } catch (err) {
@@ -388,16 +389,16 @@ const confirmBulkDelete = async () => {
   });
   
   if (confirmed) {
-    await bulkDeleteCategories();
+    await bulkDeleteCategories('delete');
   }
 };
 
 // Bulk delete categories
-const bulkDeleteCategories = async () => {
+const bulkDeleteCategories = async (action) => {
   try {
     loading.value = true;
-    const response = await fetch(`${API.BACKEND_URL}/product-category/bulk-delete`, {
-      method: 'DELETE',
+    const response = await fetch(`${API.BACKEND_URL}/product-subcategories/bulk-action/${action}`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -411,12 +412,12 @@ const bulkDeleteCategories = async () => {
       throw new Error(errorData.message || 'Failed to delete categories');
     }
     
-    toast.success(`${selectedIds.value.length} categories deleted successfully!`);
+    toast.success(`${selectedIds.value.length} sub categories deleted successfully!`);
     selectedIds.value = [];
     showBulkActions.value = false;
     await fetchCategories();
   } catch (err) {
-    console.error('Error deleting categories:', err);
+    console.error('Error deleting subcategories:', err);
     toast.error(err.message || 'Failed to delete categories');
   } finally {
     loading.value = false;

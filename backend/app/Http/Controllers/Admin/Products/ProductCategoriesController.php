@@ -27,6 +27,8 @@ use App\Libraries\FileSystem;
 use App\Http\Controllers\Admin\AppController;
 use App\Http\Controllers\ApiController;
 use App\Models\Admin\ProductCategories;
+use GrahamCampbell\ResultType\Success;
+use Illuminate\Support\Facades\Log;
 
 class ProductCategoriesController extends ApiController
 {
@@ -53,7 +55,6 @@ class ProductCategoriesController extends ApiController
                 $where[] = ['product_categories.created <= ?', date('Y-m-d 23:59:59', strtotime($createdTo))];
             }
 
-
             // Category filter
             if ($categoryIds = $request->get('category')) {
                 $categoryIds = array_map('intval', (array)$categoryIds);
@@ -76,7 +77,7 @@ class ProductCategoriesController extends ApiController
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to fetch categories',
+                'message' => 'Somethings went wrong',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -84,157 +85,103 @@ class ProductCategoriesController extends ApiController
 
     function add(Request $request)
     {
-    	if(!Permissions::hasPermission('product_categories', 'create'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
+        try {
+            if ($request->isMethod('post')) {
+                $data = $request->toArray();
+                unset($data['_token']);
 
-    	if($request->isMethod('post'))
-    	{
-    		$data = $request->toArray();
-    		unset($data['_token']);
+                $validator = Validator::make(
+                    $request->toArray(),
+                    [
+                        'title' => [
+                            'required',
+                            Rule::unique('product_categories')->whereNull('deleted_at')
+                        ],
+                        'description' => [
+                            'nullable'
+                        ]
 
-    		$validator = Validator::make(
-	            $request->toArray(),
-	            [
-	                'title' => [
-	                	'required',
-	                	Rule::unique('product_categories')->whereNull('deleted_at')
-					],
-					'description' => [
-						'nullable'
-					]
+                    ]
+                );
 
-	            ]
-	        );
-
-	        if(!$validator->fails())
-	        {
-	        	$category = ProductCategories::create($data);
-	        	if($category)
-	        	{
-	        		$request->session()->flash('success', 'Product category created successfully.');
-	        		return redirect()->route('admin.products.categories');
-	        	}
-	        	else
-	        	{
-	        		$request->session()->flash('error', 'Category could not be save. Please try again.');
-		    		return redirect()->back()->withErrors($validator)->withInput();
-	        	}
-		    }
-		    else
-		    {
-		    	$request->session()->flash('error', 'Please provide valid inputs.');
-		    	return redirect()->back()->withErrors($validator)->withInput();
-		    }
-		}
-
-		$categories = ProductCategories::getAll(
-			[
-				'product_categories.id',
-				'product_categories.title'
-			],
-			[
-				'status' => 1,
-			],
-			'product_categories.title desc'
-		);
-
-	    return view("admin/products/categories/add",[
-			'categories' => $categories
-		]);
+                if (!$validator->fails()) {
+                    $category = ProductCategories::create($data);
+                    if ($category) {
+                        return response()->json([
+                            'status' => 'true',
+                            'message' => 'Category saved successfully.'
+                        ], 200);
+                    } else {
+                        return response()->json([
+                            'status' => 'false',
+                            'message' => 'Category could not be save. Please try again.'
+                        ], 500);
+                    }
+                } else {
+                     return response()->json([
+                            'status' => 'false',
+                            'errors' => $validator->errors(),
+                            'message' => 'Validation error'
+                    ], 422);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Somethings went wrong',
+                'errors' => $e->getMessage()
+            ], 500);
+        }
     }
 
     function edit(Request $request, $id)
     {
-    	if(!Permissions::hasPermission('product_categories', 'update'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
+        $category = ProductCategories::get($id);
+        if ($request->isMethod('put')) {
+            $data = $request->toArray();
+            $validator = Validator::make(
+                $request->toArray(),
+                [
+                    'title' => [
+                        'required',
+                        Rule::unique('product_categories')->ignore($category->id)->whereNull('deleted_at'),
+                    ],
+                    'description' => [
+                        'nullable'
+                    ]
+                ]
+            );
 
-    	$category = ProductCategories::get($id);
-    	if($category)
-    	{
-	    	if($request->isMethod('post'))
-	    	{
-	    		$data = $request->toArray();
-	    		$validator = Validator::make(
-		            $request->toArray(),
-		            [
-		                'title' => [
-		                	'required',
-		                	Rule::unique('product_categories')->ignore($category->id)->whereNull('deleted_at'),
-						],
-						'description' => [
-							'nullable'
-						]
-		            ]
-		        );
+            if (!$validator->fails()) {
+                unset($data['_token']);
+                if (ProductCategories::modify($id, $data)) {
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Category saved successfully'
 
-		        if(!$validator->fails())
-		        {
-		        	unset($data['_token']);
+                    ]);
+                } else {
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Category could not be save. Please try again.'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => 'false',
+                    'errors' => $validator->errors(),
+                    'message' => 'Validation error'
+                ], 422);
+            }
+        }
 
-	        		/** IN CASE OF SINGLE UPLOAD **/
-		        	if(isset($data['image']) && $data['image'])
-		        	{
-		        		$oldImage = $category->image;
-		        	}
-		        	else
-		        	{
-		        		unset($data['image']);
-
-		        	}
-		        	/** IN CASE OF SINGLE UPLOAD **/
-		        	if(ProductCategories::modify($id, $data))
-		        	{
-		        		/** IN CASE OF SINGLE UPLOAD **/
-		        		if(isset($oldImage) && $oldImage)
-		        		{
-		        			FileSystem::deleteFile($oldImage);
-		        		}
-		        		/** IN CASE OF SINGLE UPLOAD **/
-
-		        		$request->session()->flash('success', 'Product category updated successfully.');
-		        		return redirect()->route('admin.products.categories');
-		        	}
-		        	else
-		        	{
-		        		$request->session()->flash('error', 'Category could not be save. Please try again.');
-			    		return redirect()->back()->withErrors($validator)->withInput();
-		        	}
-			    }
-			    else
-			    {
-			    	$request->session()->flash('error', 'Please provide valid inputs.');
-			    	return redirect()->back()->withErrors($validator)->withInput();
-			    }
-			}
-
-			$categories = ProductCategories::getAll(
-				[
-					'product_categories.id',
-					'product_categories.title'
-				],
-				[
-					'status' => 1,
-				],
-				'product_categories.title desc'
-			);
-		    return view("admin/products/categories/edit", [
-		    		'categories' => $categories,
-					'category' => $category
-	    		]);
-		}
-		else
-		{
-			abort(404);
-		}
+        return response()->json([
+            'status' => true,
+            'category' => $category
+        ]);
     }
 
-	function view(Request $request, $id)
+    function view(Request $request, $id)
     {
     	if(!Permissions::hasPermission('product_categories', 'listing'))
     	{
@@ -257,18 +204,21 @@ class ProductCategoriesController extends ApiController
 
     function delete(Request $request, $id)
     {
-    	if(!Permissions::hasPermission('product_categories', 'delete'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
-
-    	$product = ProductCategories::find($id);
-    	if($product->delete())
-    	{
-    		$request->session()->flash('success', 'Category deleted successfully.');
-    		return redirect()->route('admin.products.categories');
-    	}
+        try {
+            $product = ProductCategories::find($id);
+            if ($product->delete()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Category saved successfully'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Somethings went wrong',
+                'errors' => $e->getMessage()
+            ], 500);
+        }
     }
 
     function bulkActions(Request $request, $action)

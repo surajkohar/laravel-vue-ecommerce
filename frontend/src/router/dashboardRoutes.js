@@ -81,9 +81,15 @@ const dashboardRoutes = [
         meta: { permission: 'view sizes' }
       },
       {
-        path: 'sizes/add',
-        name: 'sizes.add',
+        path: 'size/add',
+        name: 'size.add',
         component: () => import('@/pages/dashboard/sizes/add.vue'), 
+        meta: { permission: 'add sizes' }
+      },
+      {
+        path: 'size/:id/edit',
+        name: 'size.edit',
+        component: () => import('@/pages/dashboard/sizes/edit.vue'), 
         meta: { permission: 'add sizes' }
       },
       {
@@ -105,10 +111,40 @@ const dashboardRoutes = [
         component: () => import('@/pages/dashboard/users/edit.vue'),  
         meta: { permission: 'edit user' }
       },
-            {
+      {
         path: 'product-category',
         name: 'productCategory',
         component: () => import('@/pages/dashboard/productCategory/listing.vue'),  
+        // meta: { permission: 'edit user' }
+      },
+      {
+        path: 'product-category/add',
+        name: 'productCategory.add',
+        component: () => import('@/pages/dashboard/productCategory/add.vue'),  
+        // meta: { permission: 'edit user' }
+      },
+      {
+        path: 'product-category/:id/edit',
+        name: 'productCategory.edit',
+        component: () => import('@/pages/dashboard/productCategory/edit.vue'),  
+        // meta: { permission: 'edit user' }
+      },
+      {
+        path: 'product-subCategory',
+        name: 'productSubCategory',
+        component: () => import('@/pages/dashboard/productSubCategory/listing.vue'),  
+        // meta: { permission: 'edit user' }
+      },
+      {
+        path: 'product-subCategory/add',
+        name: 'productSubCategory.add',
+        component: () => import('@/pages/dashboard/productSubCategory/add.vue'),  
+        // meta: { permission: 'edit user' }
+      },
+      {
+        path: 'product-subCategory/:id/edit',
+        name: 'productSubCategory.edit',
+        component: () => import('@/pages/dashboard/productSubCategory/edit.vue'),  
         // meta: { permission: 'edit user' }
       },
     ]

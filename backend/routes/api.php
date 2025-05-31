@@ -49,7 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     require_once __DIR__ . '/product.php';
     require_once __DIR__ . '/productCategory.php';
     require_once __DIR__ . '/productSubCategory.php';
-
+    require_once __DIR__ . '/sizes.php';
 
 
 });

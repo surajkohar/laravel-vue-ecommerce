@@ -494,9 +494,8 @@ font-size: 14px;
   }
   
   .form-section {
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
   }
   
   .form-section:last-child {
@@ -802,3 +801,47 @@ font-size: 14px;
       grid-template-columns: repeat(5, 1fr);
     }
   }
+
+  .bulk-actions-container {
+  position: relative;
+  display: inline-block;
+}
+
+.bulk-actions-button {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.bulk-actions-dropdown {
+  position: absolute;
+  top: 100%; /* Opens just below the button */
+  right: 0; /* Or right: 0 if you want it aligned to the right */
+  margin-top: 4px; /* Adds space between button and dropdown */
+  background-color: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 999;
+  white-space: nowrap;
+  border-radius: 6px;
+}
+
+
+.bulk-delete-button {
+  background: transparent;
+  border: none;
+  color: #e53935;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulk-delete-button:hover {
+  background-color: #f9f9f9;
+  text-decoration: none;
+}

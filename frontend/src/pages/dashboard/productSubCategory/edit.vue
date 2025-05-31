@@ -78,7 +78,7 @@ const token = localStorage.getItem('auth_token');
 const save = async () =>{
   loading.value = true;
   try {
-    const response = await fetch(`${API.BACKEND_URL}/product-category/${categoryId.value}/update`, {
+    const response = await fetch(`${API.BACKEND_URL}/product-subcategories/${categoryId.value}/update`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const save = async () =>{
 
     toast.success('Category created successfully!')
     setTimeout(() => {
-      router.push('/admin/product-category')
+      router.push('/admin/product-subCategory')
     }, 500)
     } catch (error) {
     if (!errors.value.title) {
@@ -120,7 +120,7 @@ onMounted(() => {
 });
 
 const fetchCategories = async() => {
-    const response = await fetch(`${API.BACKEND_URL}/product-category/${categoryId.value}/edit`, {
+    const response = await fetch(`${API.BACKEND_URL}/product-subcategories/${categoryId.value}/edit`, {
     method:'GET',
     headers:{
         'Content-Type': 'application/json',

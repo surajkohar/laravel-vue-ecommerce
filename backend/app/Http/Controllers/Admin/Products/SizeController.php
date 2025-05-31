@@ -9,7 +9,7 @@
  */
 
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\Products;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -33,11 +33,6 @@ class SizeController extends ApiController
 
     function index(Request $request, $slug = null)
     {
-    	// if(!Permissions::hasPermission('sizes', 'update'))
-    	// {
-    	// 	$request->session()->flash('error', 'Permission denied.');
-    	// 	return redirect()->route('admin.dashboard');
-    	// }
 
 		$sizes = Sizes::all();
 
@@ -76,38 +71,48 @@ class SizeController extends ApiController
         Log::info($request->all());
 
         $request->validate([
-            'sizes' => 'required|array',
-            'sizes.*' => 'string|max:255',
-        ]);
+    'sizes' => 'required|array',
+    'sizes.*.name' => 'required|string|max:255',
+]);
+
 
         Sizes::truncate();
         foreach ($request->sizes as $size) {
-            $capitalizedSize = strtoupper($size); // Store as uppercase
-            Sizes::create(['size_title' => $capitalizedSize]); // Assuming your sizes table has a 'name' column
+            $capitalizedSize = strtoupper($size['name']);
+            Sizes::create(['size_title' => $capitalizedSize]);
         }
 
-        return response()->json(['message' => 'Sizes added successfully!'], 201);
+
+        return response()->json([
+            'status' =>  true,
+            'message' => 'Sizes added successfully!'
+        ], 200);
     }
 
     function delete(Request $request, $id)
     {
-    	if(!Permissions::hasPermission('sizes', 'delete'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
+    	$size = Sizes::find($id);
 
-    	$admin = Sizes::find($id);
-    	if($admin->delete())
-    	{
-    		$request->session()->flash('success', 'Staff deleted successfully.');
-    		return redirect()->route('admin.size');
-    	}
-    	else
-    	{
-    		$request->session()->flash('error', 'Staff could not be delete.');
-    		return redirect()->route('admin.size');
-    	}
+    if (!$size) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Size not found.'
+        ], 404);
+    }
+
+    try {
+        $size->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Size deleted successfully.'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Failed to delete size.'
+        ], 500);
+    }
     }
 
 }

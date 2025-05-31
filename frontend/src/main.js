@@ -4,8 +4,8 @@ import router from "@/router";
 import App from "./App.vue";
 import  Vue3Toastify  from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
-
 import "@/assets/styles/main.css"; 
+
 
 const app = createApp(App);
 app.use(createPinia());

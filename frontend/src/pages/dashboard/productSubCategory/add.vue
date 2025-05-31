@@ -1,7 +1,7 @@
 <template>
   <div class="add-product-container">
     <div class="header-section-add">
-      <h1>Edit category</h1>
+      <h1>Add new category</h1>
       <div class="action-buttons">
         <button class="cancel-button" @click="goBack">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -61,13 +61,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter,useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { API } from '@/utils/config';
 import { toast } from 'vue3-toastify'
 
 const router = useRouter()
-const route = useRoute(); 
-const categoryId = ref('')
 const title = ref('')
 const desc = ref('')
 const errors = ref({})
@@ -76,10 +74,9 @@ const loading = ref(false)
 const token = localStorage.getItem('auth_token');
 
 const save = async () =>{
-  loading.value = true;
   try {
-    const response = await fetch(`${API.BACKEND_URL}/product-category/${categoryId.value}/update`, {
-      method: 'PUT',
+    const response = await fetch(`${API.BACKEND_URL}/product-subcategories/add`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -103,7 +100,7 @@ const save = async () =>{
 
     toast.success('Category created successfully!')
     setTimeout(() => {
-      router.push('/admin/product-category')
+      router.push('/admin/product-subCategory')
     }, 500)
     } catch (error) {
     if (!errors.value.title) {
@@ -112,29 +109,6 @@ const save = async () =>{
   } finally {
     loading.value = false
   }
-}
-
-onMounted(() => {
-  categoryId.value = route.params.id;
-  fetchCategories();
-});
-
-const fetchCategories = async() => {
-    const response = await fetch(`${API.BACKEND_URL}/product-category/${categoryId.value}/edit`, {
-    method:'GET',
-    headers:{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-    },
-  })
-
-    const data = await response.json()
-    if (response.ok) {
-       title.value = data.category.title
-       desc.value = data.category.description
-    }
-    throw new Error(data.message || 'Failed to save')
 }
 
 const goBack = () => {
