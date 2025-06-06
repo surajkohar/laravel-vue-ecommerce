@@ -654,68 +654,63 @@ font-size: 14px;
   }
   
   .form-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.cancel-button,
+.save-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* Cancel Button Style */
+.cancel-button {
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* Save Button Style */
+.save-button {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #45a049;
+}
+
+/* Responsive behavior for small screens */
+@media (max-width: 768px) {
+  .form-actions {
+    flex-direction: row;
+    gap: 10px;
   }
-  
+
   .cancel-button {
-    background-color: #f0f0f0;
-    color: #555;
-    padding: 10px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
+    margin-right: auto;
   }
-  
-  .cancel-button:hover {
-    background-color: #e0e0e0;
-  }
-  
+
   .save-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
+    margin-left: auto;
   }
-  
-  .save-button:hover {
-    background-color: #45a049;
+
+  .cancel-button,
+  .save-button {
+    width: auto; /* Adjust this to 100% if you prefer full-width buttons */
   }
-  
-  @media (max-width: 768px) {
-    .form-row {
-      flex-direction: column;
-      gap: 15px;
-      margin: 0;
-    }
-    
-    .form-row .form-group {
-      padding: 0;
-      width: 100%;
-    }
-    
-    .form-card {
-      padding: 20px 15px;
-      margin: 0;
-    }
-    
-    .form-actions {
-      flex-direction: column-reverse;
-      gap: 10px;
-    }
-    
-    .cancel-button,
-    .save-button {
-      width: 100%;
-    }
-  }
+}
+
 
   .error-field {
     border-color: #ff4444 !important;

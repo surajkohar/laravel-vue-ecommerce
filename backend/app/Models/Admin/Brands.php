@@ -4,7 +4,6 @@ namespace App\Models\Admin;
 
 use App\Models\AppModel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Libraries\FileSystem;
 use Illuminate\Support\Str;
@@ -15,7 +14,6 @@ class Brands extends AppModel
     protected $table = 'brands';
     protected $primaryKey = 'id';
     public $timestamps = false;
-
 
     /**
     * Get resize images
@@ -29,7 +27,7 @@ class Brands extends AppModel
 
     /**
     * Products -> Admins belongsTO relation
-    * 
+    *
     * @return Admins
     */
     public function owner()
@@ -50,8 +48,8 @@ class Brands extends AppModel
     	$page = $request->get('page') ? $request->get('page') : 1;
     	$limit = self::$paginationLimit;
     	$offset = ($page - 1) * $limit;
-    	
-        $listing = Brands::select([
+
+        $listing = Sizes::select([
             'brands.*',
             'owner.first_name as owner_first_name',
             'owner.last_name as owner_last_name'
@@ -78,7 +76,7 @@ class Brands extends AppModel
 	    	$listing->offset($offset);
 	    	$listing->limit($limit);
 	    }
-        
+
 	    $listing = $listing->paginate($limit);
 
 	    return $listing;
@@ -101,8 +99,8 @@ class Brands extends AppModel
     	else
     	{
     		$listing->select([
-    			'brands.*'
-    		]);	
+    			'sizes.*'
+    		]);
     	}
 
 	    if(!empty($where))
@@ -117,7 +115,7 @@ class Brands extends AppModel
                     $listing->whereRaw($values);
 	    	}
 	    }
-	    
+
 	    if($limit !== null && $limit !== "")
 	    {
 	    	$listing->limit($limit);
@@ -141,7 +139,7 @@ class Brands extends AppModel
                 },
             ])
             ->first();
-            
+
 	    return $record;
     }
 
@@ -163,7 +161,7 @@ class Brands extends AppModel
             else
                 $record->whereRaw($values);
 	    }
-	    
+
 	    $record = $record->limit(1)->first();
 
 	    return $record;
@@ -176,25 +174,26 @@ class Brands extends AppModel
     */
     public static function create($data)
     {
-    	$product = new Brands();
+    	$size = new Brands();
 
     	foreach($data as $k => $v)
     	{
-    		$product->{$k} = $v;
+    		$size->{$k} = $v;
     	}
 
-        $product->created_by = AdminAuth::getLoginId();
-    	$product->created = date('Y-m-d H:i:s');
-    	$product->modified = date('Y-m-d H:i:s');
-	    if($product->save())
+        // $size->created_by = AdminAuth::getLoginId();
+    	$size->created = date('Y-m-d H:i:s');
+    	$size->modified = date('Y-m-d H:i:s');
+	    if($size->save())
 	    {
             if(isset($data['title']) && $data['title'])
             {
-                $product->slug = Str::slug($product->title);
-                $product->save();
+                // Log::info('API Reques - ' . $data['title']);
+                $size->slug = Str::slug($data['title']);
+                $size->save();
             }
+	    	return $size;
 
-	    	return $product;
 	    }
 	    else
 	    {
@@ -210,22 +209,16 @@ class Brands extends AppModel
     */
     public static function modify($id, $data)
     {
-    	$product = Brands::find($id);
+    	$size = Brands::find($id);
     	foreach($data as $k => $v)
     	{
-    		$product->{$k} = $v;
+    		$size->{$k} = $v;
     	}
 
-    	$product->modified = date('Y-m-d H:i:s');
-	    if($product->save())
+    	$size->modified = date('Y-m-d H:i:s');
+	    if($size->save())
 	    {
-            if(isset($data['title']) && $data['title'])
-            {
-                $product->slug = Str::slug($product->title);
-                $product->save();
-            }
-
-	    	return $product;
+	    	return $size;
 	    }
 	    else
 	    {
@@ -233,7 +226,7 @@ class Brands extends AppModel
 	    }
     }
 
-    
+
     /**
     * To update all
     * @param $id
@@ -243,7 +236,7 @@ class Brands extends AppModel
     {
     	if(!empty($ids))
     	{
-    		return Brands::whereIn('brands.id', $ids)
+    		return Brands::whereIn('sizes.id', $ids)
 		    		->update($data);
 	    }
 	    else
@@ -259,9 +252,9 @@ class Brands extends AppModel
     */
     public static function remove($id)
     {
-    	$product = Brands::find($id);
-        $images = $product->getResizeImagesAttribute();
-    	if($product->delete())
+    	$size = Brands::find($id);
+        $images = $size->getResizeImagesAttribute();
+    	if($size->delete())
         {
             if($images)
             {

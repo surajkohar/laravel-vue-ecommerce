@@ -81,16 +81,10 @@ const dashboardRoutes = [
         meta: { permission: 'view sizes' }
       },
       {
-        path: 'size/add',
-        name: 'size.add',
-        component: () => import('@/pages/dashboard/sizes/add.vue'), 
-        meta: { permission: 'add sizes' }
-      },
-      {
-        path: 'size/:id/edit',
-        name: 'size.edit',
-        component: () => import('@/pages/dashboard/sizes/edit.vue'), 
-        meta: { permission: 'add sizes' }
+        path: 'brands',
+        name: 'brands.listing',
+        component: () => import('@/pages/dashboard/brands/listing.vue'), 
+        meta: { permission: 'view sizes' }
       },
       {
         path: 'users',

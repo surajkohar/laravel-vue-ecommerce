@@ -51,6 +51,15 @@
             <span>Products</span>
           </RouterLink>
 
+          <RouterLink to="/admin/brands" class="dropdown-item" @click="handleLinkClick"
+            :class="{ active: isActive('/admin/brands') }">
+            <svg class="item-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white"
+              stroke-width="2">
+              <circle cx="12" cy="12" r="6" />
+            </svg>
+            <span>Brands</span>
+          </RouterLink>
+
           <RouterLink to="/admin/product-category" class="dropdown-item" @click="handleLinkClick"
             :class="{ active: isActive('/admin/product-category') || isActive('/admin/product-category/add') || isActive('/admin/product-category/' + $route.params.id + '/edit') }">
             <svg class="item-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white"
@@ -209,7 +218,8 @@ const toggleProductsDropdown = () => {
 const isProductsDropdownActive = computed(() => {
   return isActive("/admin/products") || isActive("/admin/product/add") || isActive(`/admin/product/${route.params.id}/edit`) || isActive("/admin/product-category") ||
   isActive("/admin/product-category/add") || isActive(`/admin/product-category/${route.params.id}/edit`) ||
-   isActive("/admin/product-subCategory") || isActive("/admin/product-subCategory/add") || isActive(`/admin/product-subCategory/${route.params.id}/edit`)
+   isActive("/admin/product-subCategory") || isActive("/admin/product-subCategory/add") || isActive(`/admin/product-subCategory/${route.params.id}/edit`) ||
+   isActive("/admin/sizes") || isActive("/admin/brands")
 
 });
 

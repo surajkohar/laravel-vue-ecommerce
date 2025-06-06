@@ -42,14 +42,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/{id}/edit', [UsersController::class, 'edit']);
     Route::put('/user/{id}/update', [UsersController::class, 'update']);
 
-    Route::get('/sizes',[SizeController::class,'index']);
-    Route::post('/sizes/add',[SizeController::class,'add']);
-
-
     require_once __DIR__ . '/product.php';
     require_once __DIR__ . '/productCategory.php';
     require_once __DIR__ . '/productSubCategory.php';
     require_once __DIR__ . '/sizes.php';
+    require_once __DIR__ . '/brands.php';
+
 
 
 });

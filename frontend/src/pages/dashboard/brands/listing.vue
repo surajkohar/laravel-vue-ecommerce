@@ -1,7 +1,7 @@
 <template>
   <div class="add-product-container">
     <div class="header-section-add">
-      <h1>Sizes</h1>
+      <h1>Brands</h1>
       <div class="action-buttons">
         <button class="cancel-button" @click="goBack">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -17,14 +17,14 @@
     <div class="form-container">
       <div class="form-card">
         <div class="form-section">
-          <h5>Manage Sizes</h5>
+          <h5>Manage Brands</h5>
 
           <div class="size-inputs">
-            <div v-for="(size, index) in sizes" :key="index" class="form-group full-width-field size-item">
+            <div v-for="(size, index) in brands" :key="index" class="form-group full-width-field size-item">
               <input type="text" v-model="size.value" placeholder="Enter size (e.g., S, M, L)"
                 :class="{ 'error-field': errors[`sizes.${index}`] }">
               <button class="remove-size-btn" @click="confirmDelete(size.id, index)"
-                v-if="sizes.length > 1 || index > 0">
+                v-if="brands.length > 1 || index > 0">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -32,7 +32,7 @@
                 </svg>
               </button>
               <span class="error-message" v-if="errors[`sizes.${index}`]">
-                {{ errors[`sizes.${index}`][0] }}
+                {{ errors[`brands.${index}`][0] }}
               </span>
             </div>
           </div>
@@ -80,16 +80,20 @@ const router = useRouter()
 const route = useRoute()
 const token = localStorage.getItem('auth_token')
 
-const sizes = ref([{ value: '', id: null }])
+const brands = ref([{ value: '', id: null }])
 const errors = ref({})
 const loading = ref(false)
 const editingId = ref(null)
 
 // Fetch existing sizes on mounted
 onMounted(async () => {
+  fetchBrands();
+})
+
+const fetchBrands = async () => {
   try {
     loading.value = true
-    const response = await fetch(`${API.BACKEND_URL}/product-sizes`, {
+    const response = await fetch(`${API.BACKEND_URL}/brands`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       }
@@ -100,24 +104,24 @@ onMounted(async () => {
     const data = await response.json()
 
     // Show existing sizes if found, else show one empty input
-    if (data.sizes && data.sizes.length > 0) {
-      sizes.value = data.sizes.map(size => ({
-        id: size.id,
-        value: size.size_title
-      }))
+    if (data.brands && data.brands.length > 0) {
+        brands.value = data.brands.map(b => ({
+          id: b.id,
+          value: b.title
+        }))
     } else {
-      sizes.value = [{ value: '', id: null }]
+      brands.value = [{ value: '', id: null }]
     }
   } catch (error) {
-    toast.error(error.message || 'Failed to load sizes')
-    sizes.value = [{ value: '', id: null }] // fallback in case of error
+    toast.error(error.message || 'Failed to load brands')
+    brands.value = [{ value: '', id: null }] // fallback in case of error
   } finally {
     loading.value = false
-  }
-})
+  } 
+}
 
 const addNewSize = () => {
-  sizes.value.push({ value: '', id: null })
+  brands.value.push({ value: '', id: null })
 }
 
 const confirmDelete = async (id, index) => {
@@ -128,7 +132,7 @@ const confirmDelete = async (id, index) => {
   if (confirmed && id) {
     await deleteSize(id, index)
   } else if(confirmed) {
-    sizes.value.splice(index, 1)
+    brands.value.splice(index, 1)
   }
 
 }
@@ -136,7 +140,7 @@ const confirmDelete = async (id, index) => {
 const deleteSize = async (id, index) => {
   try {
     loading.value = true
-    const response = await fetch(`${API.BACKEND_URL}/product-size/${id}/delete`, {
+    const response = await fetch(`${API.BACKEND_URL}/brands/${id}/delete`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -148,10 +152,10 @@ const deleteSize = async (id, index) => {
       throw new Error(errorData.message || 'Failed to delete size')
     }
 
-    toast.success('Size deleted successfully!')
-    sizes.value.splice(index, 1)
+    toast.success('Record deleted successfully!')
+    brands.value.splice(index, 1)
   } catch (error) {
-    toast.error(error.message || 'Failed to delete size')
+    toast.error(error.message || 'Failed to delete record')
   } finally {
     loading.value = false
   }
@@ -162,23 +166,23 @@ const saveSizes = async () => {
     loading.value = true
     errors.value = {}
 
-    const validSizes = sizes.value.filter(size => size.value.trim())
+    const validSizes = brands.value.filter(size => size.value.trim())
 
     if (validSizes.length === 0) {
-      errors.value = { 'sizes.0': ['At least one size is required'] }
+      errors.value = { 'brands.0': ['At least one brand is required'] }
       return
     }
 
-    const response = await fetch(`${API.BACKEND_URL}/product-sizes/save-all`, {
+    const response = await fetch(`${API.BACKEND_URL}/brands/save-all`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        sizes: validSizes.map(size => ({
-          id: size.id || null,
-          name: size.value.trim()
+        brands: validSizes.map(b => ({
+          id: b.id || null,
+          name: b.value.trim()
         }))
       })
     })
@@ -186,13 +190,14 @@ const saveSizes = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to save sizes')
+      throw new Error(data.message || 'Failed to save record')
     }
 
-    toast.success('Sizes saved successfully!')
-    router.push('/admin/sizes')
+    toast.success(data.message)
+    fetchBrands();
+    router.push('/admin/brands')
   } catch (error) {
-    toast.error(error.message || 'Failed to save sizes')
+    toast.error(error.message || 'Failed to save record')
   } finally {
     loading.value = false
   }
