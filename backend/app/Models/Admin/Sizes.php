@@ -35,6 +35,8 @@ class Sizes extends AppModel
         return $this->belongsTo(Admins::class, 'created_by', 'id');
     }
 
+    
+
     /**
     * To search and get pagination listing
     * @param Request $request

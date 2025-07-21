@@ -18,17 +18,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Admin\Settings;
 use App\Models\Admin\Permissions;
-use App\Models\Admin\AdminAuth;
-use App\Libraries\General;
 use App\Models\Admin\Products;
 use App\Models\Admin\ProductCategories;
 use App\Models\Admin\ProductCategoryRelation;
-use App\Models\Admin\Admins;
-use App\Models\Admin\Shops;
-use App\Models\Admin\Users;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
-use App\Libraries\FileSystem;
 use App\Http\Controllers\Admin\AppController;
 use App\Http\Controllers\ApiController;
 use App\Models\Admin\BrandProducts;
@@ -36,568 +29,501 @@ use App\Models\Admin\Brands;
 use App\Models\Admin\Colours;
 use App\Models\Admin\ProductSizeRelation;
 use App\Models\Admin\ProductSubCategories;
+use App\Models\Admin\ProductVariant;
+use App\Models\Admin\ProductVariantImage;
 use App\Models\Admin\Sizes;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ProductsController extends ApiController
 {
-	function __construct()
-	{
-		parent::__construct();
-	}
 
-    function index(Request $request)
+
+    public function index(Request $request)
+{
+    try {
+        $where = [];
+
+        if ($request->get('search')) {
+            $search = '%' . $request->get('search') . '%';
+            $where[] = [
+                '(products.name LIKE ? OR products.sku LIKE ? OR users.id LIKE ?)',
+                [$search, $search, $search]
+            ];
+        }
+
+        if ($createdFrom = $request->get('createdFrom')) {
+            $where[] = ['products.created >= ?', [date('Y-m-d', strtotime($createdFrom))]];
+        }
+
+        if ($createdTo = $request->get('createdTo')) {
+            $where[] = ['products.created <= ?', [date('Y-m-d 23:59:59', strtotime($createdTo))]];
+        }
+
+        Log::info($request->all());
+
+        $categoryIds = $request->get('category');
+        if (!empty($categoryIds)) {
+            $categoryIds = is_string($categoryIds) ? explode(',', $categoryIds) : $categoryIds;
+            $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+            $where[] = ["pc.id IN ($placeholders)", $categoryIds];
+        }
+
+        $brandIds = $request->get('brand');
+        if (!empty($brandIds)) {
+            $brandIds = is_string($brandIds) ? explode(',', $brandIds) : $brandIds;
+            $placeholders = implode(',', array_fill(0, count($brandIds), '?'));
+            $where[] = ["b.id IN ($placeholders)", $brandIds];
+        }
+
+        if ($request->get('status')) {
+            $status = $request->get('status') === 'active' ? 1 : 0;
+            $where[] = ['products.status = ?', [$status]];
+        }
+
+        $listing = Products::getListing($request, $where);
+
+        return response()->json([
+            'status' => true,
+            'page' => $listing
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+    public function filters()
     {
-    	if(!Permissions::hasPermission('products', 'listing'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
 
-    	$where = [];
-    	if($request->get('search'))
-    	{
-    		$search = $request->get('search');
-    		$search = '%' . $search . '%';
-    		$where['(products.title LIKE ? or shop_owner.first_name LIKE ? or shop_owner.last_name LIKE ? or products.address LIKE ? or products.postcode LIKE ?)'] = [$search, $search, $search, $search, $search];
-    	}
-
-    	if($request->get('created_on'))
-    	{
-    		$createdOn = $request->get('created_on');
-    		if(isset($createdOn[0]) && !empty($createdOn[0]))
-    			$where['products.created >= ?'] = [
-    				date('Y-m-d 00:00:00', strtotime($createdOn[0]))
-    			];
-    		if(isset($createdOn[1]) && !empty($createdOn[1]))
-    			$where['products.created <= ?'] = [
-    				date('Y-m-d 23:59:59', strtotime($createdOn[1]))
-    			];
-    	}
-
-    	// if($request->get('shop_id') && !empty(array_filter($request->get('shop_id'))) )
-    	// {
-    	// 	$shops = $request->get('shop_id');
-    	// 	$shops = $shops ? implode(',', $shops) : 0;
-    	// 	$where[] = 'products.shop_id IN ('.$shops.')';
-    	// }
-
-    	if($request->get('category'))
-    	{
-    		$ids = ProductCategoryRelation::distinct()->whereIn('category_id', $request->get('category'))->pluck('product_id')->toArray();
-    		$ids = !empty($ids) ? implode(',', $ids) : '0';
-    		$where[] = 'products.id IN ('.$ids.')';
-    	}
-
-		if($request->get('brands'))
-    	{
-    		$ids = BrandProducts::distinct()->whereIn('brand_id', $request->get('brands'))->pluck('product_id')->toArray();
-    		$ids = !empty($ids) ? implode(',', $ids) : '0';
-    		$where[] = 'products.id IN ('.$ids.')';
-    	}
-
-    	if($request->get('status'))
-    	{
-    		switch ($request->get('status')) {
-    			case 'active':
-    				$where['products.status'] = 1;
-    			break;
-    			case 'non_active':
-    				$where['products.status'] = 0;
-    			break;
-    		}
-    	}
-
-    	$listing = Products::getListing($request, $where);
-
-    	if($request->ajax())
-    	{
-		    $html = view(
-	    		"admin/products/listingLoop",
-	    		[
-	    			'listing' => $listing
-	    		]
-	    	)->render();
-
-		    return Response()->json([
-		    	'status' => 'success',
-	            'html' => $html,
-	            'page' => $listing->currentPage(),
-	            'counter' => $listing->perPage(),
-	            'count' => $listing->total(),
-	            'pagination_counter' => $listing->currentPage() * $listing->perPage()
-	        ], 200);
-		}
-		else
-		{
-			$filters = $this->filters();
-	    	return view(
-	    		"admin/products/index",
-	    		[
-	    			'listing' => $listing,
-	    			'categories' => $filters['categories'],
-					'brands' => $filters['brands'],
-	    			'shops' => $filters['shops']
-	    		]
-	    	);
-	    }
     }
 
-    function filters()
+   public function view($id)
+{
+    try {
+        $product = Products::with([
+            'category',
+            'subcategories',
+            'variants',
+            'variants.sizes',
+            'variants.images',
+            'brands'
+        ])->findOrFail($id);
+
+        // Prepare response data
+        $response = [
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'status' => $product->status,
+                'price' => $product->price,
+                'purchase_price' => $product->purchase_price,
+                'sku' => $product->sku,
+                'stock' => $product->stock,
+                'gender' => $product->gender,
+                'category_id' => $product->category_id,
+                'category_title' => $product->category->title ?? '',
+                'brand_name' => $product->brands->title ?? '',
+                'main_image_url' => $product->main_image_name ? asset('storage/' . $product->main_image_name) : null,
+                'size_guide_url' => $product->size_guide_name ? asset('storage/' . $product->size_guide_name) : null,
+            ],
+            'subcategories' => $product->subcategories->map(function ($subcat) {
+                return [
+                    'id' => $subcat->id,
+                    'title' => $subcat->title,
+                ];
+            }),
+            'variants' => $product->variants->map(function ($variant) {
+                return [
+                    'id' => $variant->id,
+                    'color' => $variant->color,
+                    'color_name' => $variant->color_name,
+                    'sizes' => $variant->sizes->map(function ($size) {
+                        return [
+                            'id' => $size->id,
+                            'size_title' => $size->size_title,
+                        ];
+                    }),
+                    'images' => $variant->images->map(function ($image) {
+                        return [
+                            'id' => $image->id,
+                            'url' => asset('storage/' . $image->image_name),
+                        ];
+                    }),
+                ];
+            }),
+        ];
+
+        return response()->json([
+            'status' => true,
+            'data' => $response,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Product not found',
+            'error' => $e->getMessage()
+        ], 404);
+    }
+}
+
+    public function create(Request $request)
     {
-    	$catIds = ProductCategoryRelation::distinct()->pluck('category_id')->toArray();
-    	$categories = [];
-    	if($catIds)
-    	{
-			$categories = ProductCategories::getAllCategorySubCategory($catIds);
-		}
-    	$shops = Shops::getAll(
-    		[
-    			'shops.id',
-    			'shops.name',
-    			'shops.status',
-    			'users.first_name',
-    			'users.last_name'
-    		],
-    		[
-    		],
-    		'concat(shops.name) desc'
-    	);
+        if ($request->isMethod('post')) {
+            try {
+                $data = Arr::undot($request->all());
 
-		$brands = Brands::getAll(
-			[
-				'brands.id',
-				'brands.title'
-			],
-			[
-			],
-			'brands.title desc'
-		);
 
-    	return [
-    		'categories' => $categories,
-    		'shops' => $shops,
-			'brands' => $brands
-    	];
+                // Validate
+                $validator = Validator::make($request->all(), [
+                    'name'              => 'required|string',
+                    'description'       => 'nullable|string',
+                    'price'             => 'required|numeric|min:0',
+                    'purchase_price'    => 'nullable|numeric|min:0',
+                    'category_id'       => 'required|exists:product_categories,id',
+                    'sku'               => 'required|unique:products,sku',
+                    'stock'             => 'required|integer|min:0',
+                    'gender'            => 'required|in:Male,Female,Unisex,men,women,unisex',
+                    'main_image'        => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                    'size_guide'        => 'nullable|file|mimes:pdf|max:5120',
+                    'brands_slug'       =>'required',
+
+                    'subcategory_ids'   => 'nullable|array',
+                    'subcategory_ids.*' => 'integer',
+
+                    'variants'                  => 'required|array',
+                    'variants.*.color'           => 'required|string',
+                    'variants.*.color_name'      => 'required|string',
+                    'variants.*.sizes'           => 'required|array',
+                    'variants.*.sizes.*'         => 'required|exists:sizes,id',
+                    'variants.*.images'          => 'required|array|min:1',
+                    'variants.*.images.*'        => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                ]);
+
+                if ($validator->fails()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Validation error',
+                        'errors' => $validator->errors()
+                    ], 422);
+                }
+
+
+                // Create product
+                 $brand = Brands::where('slug',$data['brand'])->first();
+                $product = Products::create([
+                    'name'              => $data['name'],
+                    'description'       => $data['description'] ?? null,
+                    'price'             => $data['price'],
+                    'purchase_price'    => $data['purchase_price'] ?? null,
+                    'sku'               => $data['sku'],
+                    'stock'             => $data['stock'],
+                    'gender'            => $data['gender'],
+                    'category_id'       => $data['category_id'],
+                    'category_slug'     => $data['category_slug'] ?? '',
+                    'main_image_name'   => $request->file('main_image')->store('products/main', 'public'),
+                    'size_guide_name'   => $request->file('size_guide')?->store('products/size-guides', 'public'),
+                    'brands_slug'         => $data['brand'],
+                    'brands_id'          => $brand->id
+                ]);
+
+                //  Subcategories
+                if (!empty($data['subcategory_ids'])) {
+                    foreach ($data['subcategory_ids'] as $subcatId) {
+                        DB::table('product_subcategories')->insert([
+                            'product_id' => $product->id,
+                            'subcategory_id' => $subcatId,
+                        ]);
+                    }
+                }
+
+
+                //  Variants with sizes & images
+                foreach ($data['variants'] as $index => $variantData) {
+                    $variant = $product->variants()->create([
+                        'color' => $variantData['color'],
+                        'color_name' => $variantData['color_name'],
+                    ]);
+
+                    // Sync sizes
+                    $variant->sizes()->sync($variantData['sizes']);
+
+                    // Save images
+                    foreach ($request->file("variants.$index.images") as $imageFile) {
+                        $path = $imageFile->store('products/variants', 'public');
+                        $variant->images()->create([
+                            'image_name' => $path,
+                            'image_type' => $imageFile->getClientMimeType(),
+                            'image_size' => $imageFile->getSize(),
+                        ]);
+                    }
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Product created successfully',
+                    'id' => $product->id,
+                ], 201);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        }
     }
 
-    function view(Request $request, $id)
+
+    public function edit(Request $request, $id)
     {
-    	if(!Permissions::hasPermission('products', 'listing'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
+        try {
+            $product = Products::with([
+                'category',
+                'subcategories',
+                'variants',
+                'variants.sizes',
+                'variants.images'
+            ])->findOrFail($id);
 
-    	$product = Products::get($id);
-		$where = ['product_sizes.product_id' => $id];
-		if($request->get('search'))
-    	{
-    		$search = $request->get('search');
-    		$search = '%' . $search . '%';
-    		$where['(
-				product_sizes.id LIKE ? or
-				product_sizes.size_title LIKE ? or
-				product_sizes.from_cm LIKE ? or
-				product_sizes.price LIKE ? or
-				product_sizes.to_cm LIKE ?)'] = [$search, $search, $search, $search, $search];
-    	}
-		$listing = ProductSizeRelation::getListing($request, $where);
-    	if($product)
-    	{
-			if($request->ajax())
-			{
-				$html = view(
-					"admin/products/productSizes/listingLoop",
-					[
-						'listing' => $listing
-					]
-				)->render();
+            // Prepare response data
+            $response = [
+                'product' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'status' => $product->status,
+                    'price' => $product->price,
+                    'purchase_price' => $product->purchase_price,
+                    'sku' => $product->sku,
+                    'stock' => $product->stock,
+                    'gender' => $product->gender,
+                    'category_id' => $product->category_id,
+                    'category_slug' => $product->category->slug ?? '',
+                    'main_image_url' => $product->main_image_name ? asset('storage/' . $product->main_image_name) : null,
+                    'size_guide_url' => $product->size_guide_name ? asset('storage/' . $product->size_guide_name): null,
+                    'size_guide_name' => null,
+                    'brand' => $product->brands_slug,
+                ],
+                'subcategories' => $product->subcategories->map(function ($subcat) {
+                    return [
+                        'id' => $subcat->id,
+                        'title' => $subcat->title,
+                    ];
+                }),
+                'variants' => $product->variants->map(function ($variant) {
+                    return [
+                        'id' => $variant->id,
+                        'color' => $variant->color,
+                        'color_name' => $variant->color_name,
+                        'sizes' => $variant->sizes->map(function ($size) {
+                            return [
+                                'id' => $size->id,
+                                'size_title' => $size->size_title,
+                            ];
+                        }),
+                        'images' => $variant->images->map(function ($image) {
+                            return [
+                                'id' => $image->id,
+                                'url' => asset('storage/' . $image->image_name),
+                            ];
+                        }),
+                    ];
+                }),
+            ];
 
-				return Response()->json([
-					'status' => 'success',
-					'html' => $html,
-					'page' => $listing->currentPage(),
-					'counter' => $listing->perPage(),
-					'count' => $listing->total(),
-					'pagination_counter' => $listing->currentPage() * $listing->perPage()
-				], 200);
-			}
-			else
-			{
-				return view("admin/products/view", [
-					'product' => $product,
-					'listing' => $listing
-				]);
-			}
-		}
-		else
-		{
-			abort(404);
-		}
+            return response()->json([
+                'status' => true,
+                'data' => $response,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product not found',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
 
-    function add(Request $request)
+    public function update(Request $request, $id)
     {
-    	if(!Permissions::hasPermission('products', 'create'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
+        if ($request->isMethod('put')) {
+            try {
+                $product = Products::with(['variants', 'subcategories'])->findOrFail($id);
+                $data = Arr::undot($request->all());
+                // Validation rules
+                $rules = [
+                    'name'              => 'required|string',
+                    'description'       => 'nullable|string',
+                    'price'             => 'required|numeric|min:0',
+                    'purchase_price'    => 'nullable|numeric|min:0',
+                    'category_id'       => 'required|exists:product_categories,id',
+                    'sku'               => 'required|unique:products,sku,' . $id,
+                    'stock'             => 'required|integer|min:0',
+                    'gender'            => 'required|in:Male,Female,Unisex,men,women,unisex',
+                    'main_image'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                    'size_guide'        => 'nullable|file|mimes:pdf|max:5120',
+                    'brand'       =>'required',
+                    'subcategory_ids'   => 'nullable|array',
+                    'subcategory_ids.*' => 'integer',
 
-    	if($request->isMethod('post'))
-    	{
-			$data = $request->toArray();
-    		unset($data['_token']);
-			$sizeData = [];
-			$colors = [];
-			$subCategory = [];
-			$brands = [];
-			if(isset($data['sizeData']) && $data['sizeData']) {
-				$data['sizeData'] = json_decode($data['sizeData'], true);
-				$sizeData = $data['sizeData'];
-			}
-			if (isset($data['tags']) && $data['tags']) {
-				$data['tags'] = explode(',', $data['tags']);
-			}
-			if (isset($data['color_id']) && $data['color_id']) {
-				$colors = $data['color_id'];
-			}
-			if(isset($data['sub_category']) && $data['sub_category']) {
-				$subCategory = $data['sub_category'];
-			}
-			if(isset($data['brand']) && $data['brand']) {
-				$brands = $data['brand'];
-			}
-    		$validator = Validator::make(
-	            $data,
-	            [
-	                'title' => 'required',
-	                'description' => 'nullable',
-					'price' => ['required', 'numeric', 'min:0'],
-					'sale_price' => ['nullable', 'numeric', 'min:0'],
-	                'category' => ['required', Rule::exists(ProductCategories::class,'id')],
-	                'brand' => 'required',
-					'tags' => ['nullable', 'array'],
-					'tags.*' => ['string','max:20',],
-					'color_id' => ['nullable', 'array'],
-					'color_id.*' => ['distinct','required', Rule::exists(Colours::class,'id')],
-					'gender' => ['required', Rule::in(['Male','Female','Unisex'])],
-					'sku_number' => ['required', Rule::unique('products')],
-					'sizeData' => ['required', 'array']
-	            ]
-	        );
+                    'variants'                  => 'required|array',
+                    'variants.*.id'             => 'nullable|exists:product_variants,id',
+                    'variants.*.color'          => 'required|string',
+                    'variants.*.color_name'     => 'required|string',
+                    'variants.*.sizes'          => 'required|array',
+                    'variants.*.sizes.*'        => 'required|exists:sizes,id',
+                    'variants.*.new_images'     => 'nullable|array',
+                    'variants.*.new_images.*'   => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                    'variants.*.deleted_images' => 'nullable|array',
+                    'variants.*.deleted_images.*' => 'required|exists:product_variant_images,id',
+                ];
 
-	        if(!$validator->fails())
-	        {
-				unset($data['size']);
-				unset($data['sizeData']);
-				unset($data['color_id']);
-	        	unset($data['brand']);
-	        	unset($data['sub_category']);
+                $validator = Validator::make($request->all(), $rules);
 
-				$data['category_id'] = $data['category'];
-				unset($data['category']);
-	        	$product = Products::create($data);
-	        	if($product)
-	        	{
-					if(!empty($colors))
-	        		{
-						Products::handleColors($product->id, $colors);
-	        		}
-					if (!empty($sizeData)) {
-						Products::handleSizes($product->id, $sizeData);
-					}
-					if(!empty($brands))
-	        		{
-	        			Products::handleBrands($product->id, $brands);
-	        		}
-					if(!empty($subCategory))
-	        		{
-	        			Products::handleSubCategory($product->id, $subCategory);
-	        		}
-					$request->session()->flash('success', "Product created successfully.");
-					return Response()->json([
-						'status' => true,
-						'message' => "Product created successfully.",
-						'id' => $product->id
-					]);
-	        	}
-	        	else
-	        	{
-					return Response()->json([
-						'status' => false,
-						'message' => 'Product could not be saved. Please try again.'
-					], 400);
-	        	}
-		    }
-		    else
-		    {
-				return Response()->json([
-					'status' => false,
-					'message' => current(current($validator->errors()->getMessages()))
-				], 400);
-		    }
-		}
+                if ($validator->fails()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Validation error',
+                        'errors' => $validator->errors()
+                    ], 422);
+                }
 
-	    $categories = ProductCategories::getAll(
-	    		[
-	    			'product_categories.id',
-	    			'product_categories.title'
-	    		],
-	    	    [
-					'status' => 1,
-				],
-	    		'product_categories.title desc'
-	    	);
+                $brand = Brands::where('slug',$data['brand'])->first();
+                // Update product basic info
+                $updateData = [
+                    'name'              => $data['name'],
+                    'description'       => $data['description'] ?? null,
+                    'price'             => $data['price'],
+                    'status'            => $data['status'],
+                    'purchase_price'    => $data['purchase_price'] ?? null,
+                    'sku'               => $data['sku'],
+                    'stock'             => $data['stock'],
+                    'gender'            => $data['gender'],
+                    'category_id'       => $data['category_id'],
+                    'category_slug'     => $data['category_slug'] ?? '',
+                    'brands_slug'         => $data['brand'],
+                    'brands_id'          => $brand->id
+                ];
 
-		$brands = Brands::getAll(
-	    		[
-	    			'brands.id',
-	    			'brands.title'
-	    		],
-	    	    [
-					'status' => 1,
-				],
-	    		'brands.title desc'
-	    	);
+                // Handle main image update if provided
+                if ($request->hasFile('main_image')) {
+                    // Delete old image if exists
+                    if ($product->main_image_name) {
+                        Storage::disk('public')->delete($product->main_image_name);
+                    }
+                    $updateData['main_image_name'] = $request->file('main_image')->store('products/main', 'public');
+                }
 
-	    $users = Users::getAll(
-	    		[
-	    			'users.id',
-	    			'users.first_name',
-	    			'users.last_name',
-	    			'users.status',
-	    		],
-	    		[
-	    		],
-	    		'concat(users.first_name, users.last_name) desc'
-	    	);
+                // Handle size guide update if provided
+                if ($request->hasFile('size_guide')) {
+                    // Delete old size guide if exists
+                    if ($product->size_guide_name) {
+                        Storage::disk('public')->delete($product->size_guide_name);
+                    }
+                    $updateData['size_guide_name'] = $request->file('size_guide')->store('products/size-guides', 'public');
+                }
 
-		$colors = Colours::getAll(
-	    		[
-	    			'colours.id',
-	    			'colours.color_code',
-	    			'colours.title',
-	    		],
-	    	    [
-				],
-	    		'colours.color_code desc'
-	    	);
+                $product->update($updateData);
 
-		$sizes = Sizes::getAll(
-	    		[
-	    			'sizes.id',
-	    			'sizes.type',
-	    			'sizes.size_title',
-	    			'sizes.from_cm',
-	    			'sizes.to_cm',
-	    		],
-	    	    [
-				],
-	    		'sizes.size_title desc'
-	    	);
-	    return view("admin/products/add", [
-	    			'categories' => $categories,
-	    			'users' => $users,
-					'brands' => $brands,
-					'colors' => $colors,
-					'sizes' => $sizes
-	    		]);
+                // Update subcategories
+                DB::table('product_subcategories')->where('product_id', $product->id)->delete();
+                if (!empty($data['subcategory_ids'])) {
+                    foreach ($data['subcategory_ids'] as $subcatId) {
+                        DB::table('product_subcategories')->insert([
+                            'product_id' => $product->id,
+                            'subcategory_id' => $subcatId,
+                        ]);
+                    }
+                }
+
+                // Process variants
+                $existingVariantIds = $product->variants->pluck('id')->toArray();
+                $updatedVariantIds = [];
+
+                foreach ($data['variants'] as $variantData) {
+                    // Update or create variant
+                    $variant = isset($variantData['id'])
+                        ? ProductVariant::find($variantData['id'])
+                        : $product->variants()->create([
+                            'color' => $variantData['color'],
+                            'color_name' => $variantData['color_name'],
+                        ]);
+
+                    $updatedVariantIds[] = $variant->id;
+
+                    // Update variant details
+                    $variant->update([
+                        'color' => $variantData['color'],
+                        'color_name' => $variantData['color_name'],
+                    ]);
+
+                    // Sync sizes
+                    $variant->sizes()->sync($variantData['sizes']);
+
+                    // Delete marked images
+                    if (!empty($variantData['deleted_images'])) {
+                        $imagesToDelete = ProductVariantImage::whereIn('id', $variantData['deleted_images'])
+                            ->where('variant_id', $variant->id)
+                            ->get();
+
+                        foreach ($imagesToDelete as $image) {
+                            Storage::disk('public')->delete($image->image_name);
+                            $image->delete();
+                        }
+                    }
+
+                    // Add new images
+                    if (!empty($variantData['new_images'])) {
+                        foreach ($variantData['new_images'] as $imageFile) {
+                            $path = $imageFile->store('products/variants', 'public');
+                            $variant->images()->create([
+                                'image_name' => $path,
+                                'image_type' => $imageFile->getClientMimeType(),
+                                'image_size' => $imageFile->getSize(),
+                            ]);
+                        }
+                    }
+                }
+
+                // Delete variants that were removed
+                $variantsToDelete = array_diff($existingVariantIds, $updatedVariantIds);
+                if (!empty($variantsToDelete)) {
+                    $deletedVariants = ProductVariant::whereIn('id', $variantsToDelete)->get();
+                    foreach ($deletedVariants as $variant) {
+                        foreach ($variant->images as $image) {
+                            Storage::disk('public')->delete($image->image_name);
+                        }
+                        $variant->delete();
+                    }
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Product updated successfully',
+                    'id' => $product->id,
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        }
     }
 
-    function edit(Request $request, $id)
-    {
-    	if(!Permissions::hasPermission('products', 'update'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
-    	$product = Products::get($id);
-    	if($product)
-    	{
-	    	if($request->isMethod('post'))
-	    	{
-	    		$data = $request->toArray();
-				$sizeData = [];
-				$subCategory= [];
-				$brands = [];
-				$colors = [];
-				if(isset($data['sizeData']) && $data['sizeData']) {
-					$data['sizeData'] = json_decode($data['sizeData'], true);
-					$sizeData = $data['sizeData'];
-				}
-				if (isset($data['tags']) && $data['tags']) {
-					$data['tags'] = explode(',', $data['tags']);
-				}
-				if(isset($data['sub_category']) && $data['sub_category']) {
-	        		$subCategory = $data['sub_category'];
-	        	}
-				if(isset($data['color_id']) && $data['color_id']) {
-	        		$colors = $data['color_id'];
-	        	}
-				if(isset($data['brand']) && $data['brand']) {
-					$brands = $data['brand'];
-				}
-	    		$validator = Validator::make(
-		            $data,
-			            [
-							'title' => 'required',
-							'description' => 'nullable',
-							'price' => ['required', 'numeric', 'min:0'],
-							'max_price' => ['nullable', 'numeric', 'min:0'],
-							'category' => ['required', Rule::exists(ProductCategories::class,'id')],
-							'brand' => 'required',
-							'tags' => ['nullable', 'array'],
-							'tags.*' => ['string','max:20',],
-							'color_id' => ['nullable', 'array'],
-							'color_id.*' => ['required', Rule::exists(Colours::class,'id')],
-							'gender' => ['required', Rule::in(['Male','Female','Unisex','Kids'])],
-							'sku_number' => ['required', Rule::unique('products')->ignore($product->id)],
-							'sizeData' => ['required', 'array']
-		            	]
-		        );
-		        if(!$validator->fails())
-		        {
-		        	unset($data['_token']);
-					unset($data['sizeData']);
-					unset($data['size']);
-					unset($data['sub_category']);
-					unset($data['color_id']);
-	        		/** ONLY IN CASE OF MULTIPLE IMAGE USE THIS **/
-	        		if(isset($data['image']) && $data['image'])
-	        		{
-	        			$data['image'] = json_decode($data['image'], true);
-	        			$product->image = $product->image ? json_decode($product->image) : [];
-		        		$data['image'] = array_merge($product->image, $data['image']);
-		        		$data['image'] = json_encode($data['image']);
-		        	}
-		        	else
-		        	{
-		        		unset($data['image']);
-		        	}
-		        	/** ONLY IN CASE OF MULTIPLE IMAGE USE THIS **/
-					unset($data['brand']);
-					unset($data['sub_category']);
-					$data['category_id'] = $data['category'];
-					unset($data['category']);
-		        	if(Products::modify($id, $data))
-		        	{
-						if (!empty($sizeData)) {
-							Products::handleSizes($product->id, $sizeData);
-						}
-						if(!empty($brands))
-		        		{
-		        			Products::handleBrands($product->id, $brands);
-		        		}
-						if(!empty($subCategory))
-						{
-							Products::handleSubCategory($product->id, $subCategory);
-						}
-						if(!empty($colors))
-						{
-							Products::handleColors($product->id, $colors);
-						}
-		        		$request->session()->flash('success', "Product updated successfully.");
-						return Response()->json([
-							'status' => true,
-							'message' => "Product created successfully.",
-							'id' => $product->id
-						]);
-		        	}
-		        	else
-		        	{
-						return Response()->json([
-							'status' => false,
-							'message' => 'Product could not be saved. Please try again.'
-						], 400);
-		        	}
-			    }
-			    else
-			    {
-					return Response()->json([
-						'status' => false,
-						'message' => current(current($validator->errors()->getMessages()))
-					], 400);
-			    }
-			}
-
-			$categories = ProductCategories::getAll(
-	    		[
-	    			'product_categories.id',
-	    			'product_categories.title'
-	    		],
-				[
-					'status' => 1,
-				],
-	    		'product_categories.title desc'
-	    	);
-
-	    	$users = Users::getAll(
-	    		[
-	    			'users.id',
-	    			'users.first_name',
-	    			'users.last_name',
-	    			'users.status',
-	    		],
-	    		[
-	    		],
-	    		'concat(users.first_name, users.last_name) desc'
-	    	);
-
-			$brands = Brands::getAll(
-	    		[
-	    			'brands.id',
-	    			'brands.title'
-	    		],
-	    	    [
-					'status' => 1,
-				],
-	    		'brands.title desc'
-	    	);
-			$colors = Colours::getAll(
-	    		[
-	    			'colours.id',
-	    			'colours.color_code',
-	    			'colours.title',
-	    		],
-	    	    [
-				],
-	    		'colours.color_code desc'
-	    	);
-			$sizes = Sizes::getAll(
-	    		[
-	    			'sizes.id',
-	    			'sizes.type',
-	    			'sizes.size_title',
-	    			'sizes.from_cm',
-	    			'sizes.to_cm',
-	    		],
-	    	    [
-				],
-	    		'sizes.size_title desc'
-	    	);
-			return view("admin/products/add", [
-    			'product' => $product,
-    			'categories' => $categories,
-    			'users' => $users,
-				'brands' => $brands,
-				'colors' => $colors,
-				'sizes' => $sizes
-    		]);
-		}
-		else
-		{
-			abort(404);
-		}
-    }
 
     function delete(Request $request, $id)
     {
-    	if(!Permissions::hasPermission('products', 'delete'))
-    	{
-    		$request->session()->flash('error', 'Permission denied.');
-    		return redirect()->route('admin.dashboard');
-    	}
 
     	if(Products::remove($id))
     	{
@@ -669,4 +595,22 @@ class ProductsController extends ApiController
 			'subCategory' => $subCategory,
 		]);
 	}
+
+    public function fetchdata()
+    {
+        $category = ProductCategories::all();
+        $subCategory = ProductSubCategories::all();
+        $sizes = Sizes::all();
+        $brands = Brands::all();
+        $colors = Colours::all();
+
+        return response()->json([
+            'status' => true,
+            'category' => $category,
+            'subCategory' => $subCategory,
+            'brands' => $brands,
+            'sizes' => $sizes,
+            'colors' => $colors ?? ''
+        ]);
+    }
 }

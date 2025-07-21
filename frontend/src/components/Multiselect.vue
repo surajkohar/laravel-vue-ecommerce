@@ -24,6 +24,12 @@
           class="search-input"
         />
         <div
+        class="select-option"
+        @click="clearSelection"
+      >
+        Select
+      </div>
+        <div
           v-for="option in filteredOptions"
           :key="getOptionValue(option)"
           class="select-option"
@@ -36,104 +42,113 @@
     </div>
   </template>
   
-  <script setup>
-  import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-  
-  const props = defineProps({
-    modelValue: {
-      type: Array,
-      default: () => []
-    },
-    options: {
-      type: Array,
-      required: true
-    },
-    placeholder: {
-      type: String,
-      default: 'Select options'
-    },
-    optionLabel: {
-      type: String,
-      default: 'name'
-    },
-    optionValue: {
-      type: String,
-      default: 'id'
-    }
-  })
-  
-  const emit = defineEmits(['update:modelValue'])
-  
-  const isOpen = ref(false)
-  const selectedOptions = ref([])
-  const searchQuery = ref('')
-  
-  // Watch for changes in modelValue to update selected options
-  watch(() => props.modelValue, (newVal) => {
-    selectedOptions.value = props.options.filter(option => 
-      newVal.includes(getOptionValue(option))
-    )
-  }, { immediate: true })
-  
-  const getOptionLabel = (option) => {
-    return typeof option === 'object' ? option[props.optionLabel] : option
+ <script setup>
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+
+const props = defineProps({
+  modelValue: {
+    type: Array,
+    default: () => []
+  },
+  options: {
+    type: Array,
+    required: true
+  },
+  placeholder: {
+    type: String,
+    default: 'Select options'
+  },
+  optionLabel: {
+    type: String,
+    default: 'name'
+  },
+  optionValue: {
+    type: String,
+    default: 'id'
   }
-  
-  const getOptionValue = (option) => {
-    return typeof option === 'object' ? option[props.optionValue] : option
+})
+
+const emit = defineEmits(['update:modelValue'])
+
+const isOpen = ref(false)
+const selectedOptions = ref([])
+const searchQuery = ref('')
+
+//  MOVE THESE FUNCTIONS BEFORE USING THEM BELOW
+const getOptionLabel = (option) => {
+  return typeof option === 'object' ? option[props.optionLabel] : option
+}
+
+const getOptionValue = (option) => {
+  return typeof option === 'object' ? option[props.optionValue] : option
+}
+
+//  NOW SAFE TO USE getOptionValue() IN WATCH
+watch(() => props.modelValue, (newVal) => {
+  if (!Array.isArray(props.options)) {
+    selectedOptions.value = []
+    return
   }
-  
-  const isOptionSelected = (option) => {
-    return selectedOptions.value.some(
-      selected => getOptionValue(selected) === getOptionValue(option)
-    )
+
+  selectedOptions.value = props.options.filter(option =>
+    newVal.includes(getOptionValue(option))
+  )
+}, { immediate: true })
+
+const isOptionSelected = (option) => {
+  return selectedOptions.value.some(
+    selected => getOptionValue(selected) === getOptionValue(option)
+  )
+}
+
+const clearSelection = () => {
+  emit('update:modelValue', [])
+}
+
+const toggleDropdown = () => {
+  isOpen.value = !isOpen.value
+}
+
+const toggleOption = (option) => {
+  const optionValue = getOptionValue(option)
+  const currentValue = props.modelValue
+  const newValue = currentValue.includes(optionValue)
+    ? currentValue.filter(val => val !== optionValue)
+    : [...currentValue, optionValue]
+
+  emit('update:modelValue', newValue)
+}
+
+const removeOption = (option) => {
+  const optionValue = getOptionValue(option)
+  const newValue = props.modelValue.filter(val => val !== optionValue)
+  emit('update:modelValue', newValue)
+}
+
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.multi-select')) {
+    isOpen.value = false
   }
-  
-  const toggleDropdown = () => {
-    isOpen.value = !isOpen.value
-  }
-  
-  const toggleOption = (option) => {
-    const optionValue = getOptionValue(option)
-    const currentValue = props.modelValue
-    const newValue = currentValue.includes(optionValue)
-      ? currentValue.filter(val => val !== optionValue)
-      : [...currentValue, optionValue]
-  
-    emit('update:modelValue', newValue)
-  }
-  
-  const removeOption = (option) => {
-    const optionValue = getOptionValue(option)
-    const newValue = props.modelValue.filter(val => val !== optionValue)
-    emit('update:modelValue', newValue)
-  }
-  
-  const handleClickOutside = (event) => {
-    if (!event.target.closest('.multi-select')) {
-      isOpen.value = false
-    }
-  }
-  
-  onMounted(() => {
-    document.addEventListener('click', handleClickOutside)
-  })
-  
-  onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside)
-  })
-  
-  // Computed property for filtered options based on search query
-  const filteredOptions = computed(() => {
-    if (!searchQuery.value) {
-      return props.options
-    }
-    const query = searchQuery.value.toLowerCase()
-    return props.options.filter(option =>
-      getOptionLabel(option).toLowerCase().includes(query)
-    )
-  })
-  </script>
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+const filteredOptions = computed(() => {
+  if (!searchQuery.value) return props.options
+
+  const query = searchQuery.value.toLowerCase()
+  return props.options.filter(option =>
+    getOptionLabel(option).toLowerCase().includes(query)
+  )
+})
+</script>
+
   
   <style scoped>
   .multi-select {

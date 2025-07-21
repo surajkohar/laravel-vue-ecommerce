@@ -11,25 +11,33 @@ use Illuminate\Support\Str;
 use App\Libraries\General;
 use Illuminate\Support\Facades\Log;
 
-class ProductSubCategories extends AppModel
+class ProductVariant extends AppModel
 {
-    protected $table = 'product_sub_categories';
+    protected $table = 'product_variants';
     protected $primaryKey = 'id';
     public $timestamps = false;
-    protected $casts = [
-        'category_ids' => 'array',
-    ];
+    protected $guarded = [];
 
 
     /**
-    * ProductSubCategories -> Product belongsToMany relation
+    * ProductVariant -> Product belongsToMany relation
     *
-    * @return ProductSubCategories
+    * @return ProductVariant
     */
-    public function products()
+    public function product()
     {
-        return $this->belongsToMany(Products::class, 'product_category_relation', 'category_id', 'product_id');
+        return $this->belongsTo(Products::class, 'product_id');
     }
+
+    public function sizes()
+    {
+        return $this->belongsToMany(Sizes::class, 'product_variant_sizes', 'variant_id', 'size_id');
+    }
+
+    public function images()
+{
+    return $this->hasMany(ProductVariantImage::class, 'variant_id');
+}
 
     /**
     * Products -> Admins belongsTO relation
@@ -42,6 +50,16 @@ class ProductSubCategories extends AppModel
     }
 
     /**
+    * Get resize images
+    *
+    * @return array
+    */
+    public function getResizeImagesAttribute()
+    {
+        return $this->image ? FileSystem::getAllSizeImages($this->image) : null;
+    }
+
+    /**
     * To search and get pagination listing
     * @param Request $request
     * @param $limit
@@ -50,7 +68,7 @@ class ProductSubCategories extends AppModel
      public static function getListing(Request $request, array $where = [])
     {
         // Validate sorting parameters
-        $orderBy = $request->get('sort_field', 'product_sub_categories.id');
+        $orderBy = $request->get('sort_field', 'product_variants.id');
         $direction = in_array(strtolower($request->get('sort_direction')), ['asc', 'desc'])
             ? $request->get('sort_direction')
             : 'desc';
@@ -60,11 +78,11 @@ class ProductSubCategories extends AppModel
         $limit = max(1, (int)$request->get('per_page', self::$paginationLimit));
         $offset = ($page - 1) * $limit;
 
-        $query = ProductSubCategories::select([
-                'product_sub_categories.*',
+        $query = ProductVariant::select([
+                'product_variants.*',
                 'owner.name as owner_first_name',
             ])
-            ->leftJoin('users as owner', 'owner.id', '=', 'product_sub_categories.created_by')
+            ->leftJoin('users as owner', 'owner.id', '=', 'product_variants.created_by')
             ->orderBy($orderBy, $direction);
 
         // Apply where conditions
@@ -85,9 +103,9 @@ class ProductSubCategories extends AppModel
     * @param $orderBy
     * @param $limit
     */
-    public static function getAll($select = [], $where = [], $orderBy = 'product_sub_categories.id desc', $limit = null)
+    public static function getAll($select = [], $where = [], $orderBy = 'product_variants.id desc', $limit = null)
     {
-    	$listing = ProductSubCategories::orderByRaw($orderBy);
+    	$listing = ProductVariant::orderByRaw($orderBy);
 
     	if(!empty($select))
     	{
@@ -96,7 +114,7 @@ class ProductSubCategories extends AppModel
     	else
     	{
     		$listing->select([
-    			'product_sub_categories.*'
+    			'product_variants.*'
     		]);
     	}
 
@@ -133,7 +151,7 @@ class ProductSubCategories extends AppModel
     */
     public static function getAllCategorySubCategory($ids = [])
     {
-        $listing = ProductSubCategories::select([
+        $listing = ProductVariant::select([
                 'id',
                 'parent_id',
                 'title',
@@ -152,7 +170,7 @@ class ProductSubCategories extends AppModel
             $finalSubCategories[$value->parent_id][] = $value;
         }
 
-        $listing = ProductSubCategories::select([
+        $listing = ProductVariant::select([
                 'id',
                 'parent_id',
                 'title'
@@ -184,7 +202,7 @@ class ProductSubCategories extends AppModel
     */
     public static function get($id)
     {
-    	$record = ProductSubCategories::where('id', $id)
+    	$record = ProductVariant::where('id', $id)
             ->first();
 
 	    return $record;
@@ -195,9 +213,9 @@ class ProductSubCategories extends AppModel
     * @param $where
     * @param $orderBy
     */
-    public static function getRow($where = [], $orderBy = 'product_sub_categories.id desc')
+    public static function getRow($where = [], $orderBy = 'product_variants.id desc')
     {
-    	$record = ProductSubCategories::orderByRaw($orderBy);
+    	$record = ProductVariant::orderByRaw($orderBy);
 
 	    foreach($where as $query => $values)
 	    {
@@ -221,7 +239,7 @@ class ProductSubCategories extends AppModel
     */
     public static function create($data)
     {
-    	$category = new ProductSubCategories();
+    	$category = new ProductVariant();
 
     	foreach($data as $k => $v)
     	{
@@ -253,7 +271,7 @@ class ProductSubCategories extends AppModel
     */
     public static function modify($id, $data)
     {
-    	$category = ProductSubCategories::find($id);
+    	$category = ProductVariant::find($id);
 
     	foreach($data as $k => $v)
     	{
@@ -286,7 +304,7 @@ class ProductSubCategories extends AppModel
     {
     	if(!empty($ids))
     	{
-    		return ProductSubCategories::whereIn('product_sub_categories.id', $ids)
+    		return ProductVariant::whereIn('product_variants.id', $ids)
 		    		->update($data);
 	    }
 	    else
@@ -302,7 +320,7 @@ class ProductSubCategories extends AppModel
     */
     public static function remove($id)
     {
-    	$category = ProductSubCategories::find($id);
+    	$category = ProductVariant::find($id);
     	return $category->delete();
     }
 
@@ -315,12 +333,13 @@ class ProductSubCategories extends AppModel
     {
     	if(!empty($ids))
     	{
-    		return ProductSubCategories::whereIn('product_sub_categories.id', $ids)
+    		return ProductVariant::whereIn('product_variants.id', $ids)
 		    		->delete();
 	    }
 	    else
 	    {
 	    	return null;
 	    }
+
     }
 }

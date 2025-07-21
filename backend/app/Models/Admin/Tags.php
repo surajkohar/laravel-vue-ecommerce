@@ -11,25 +11,12 @@ use Illuminate\Support\Str;
 use App\Libraries\General;
 use Illuminate\Support\Facades\Log;
 
-class ProductSubCategories extends AppModel
+class Tags extends AppModel
 {
-    protected $table = 'product_sub_categories';
+    protected $table = 'tags';
     protected $primaryKey = 'id';
     public $timestamps = false;
-    protected $casts = [
-        'category_ids' => 'array',
-    ];
 
-
-    /**
-    * ProductSubCategories -> Product belongsToMany relation
-    *
-    * @return ProductSubCategories
-    */
-    public function products()
-    {
-        return $this->belongsToMany(Products::class, 'product_category_relation', 'category_id', 'product_id');
-    }
 
     /**
     * Products -> Admins belongsTO relation
@@ -42,6 +29,16 @@ class ProductSubCategories extends AppModel
     }
 
     /**
+    * Get resize images
+    *
+    * @return array
+    */
+    public function getResizeImagesAttribute()
+    {
+        return $this->image ? FileSystem::getAllSizeImages($this->image) : null;
+    }
+
+    /**
     * To search and get pagination listing
     * @param Request $request
     * @param $limit
@@ -50,7 +47,7 @@ class ProductSubCategories extends AppModel
      public static function getListing(Request $request, array $where = [])
     {
         // Validate sorting parameters
-        $orderBy = $request->get('sort_field', 'product_sub_categories.id');
+        $orderBy = $request->get('sort_field', 'tags.id');
         $direction = in_array(strtolower($request->get('sort_direction')), ['asc', 'desc'])
             ? $request->get('sort_direction')
             : 'desc';
@@ -60,11 +57,11 @@ class ProductSubCategories extends AppModel
         $limit = max(1, (int)$request->get('per_page', self::$paginationLimit));
         $offset = ($page - 1) * $limit;
 
-        $query = ProductSubCategories::select([
-                'product_sub_categories.*',
+        $query = ProductCategories::select([
+                'tags.*',
                 'owner.name as owner_first_name',
             ])
-            ->leftJoin('users as owner', 'owner.id', '=', 'product_sub_categories.created_by')
+            ->leftJoin('users as owner', 'owner.id', '=', 'tags.created_by')
             ->orderBy($orderBy, $direction);
 
         // Apply where conditions
@@ -85,9 +82,9 @@ class ProductSubCategories extends AppModel
     * @param $orderBy
     * @param $limit
     */
-    public static function getAll($select = [], $where = [], $orderBy = 'product_sub_categories.id desc', $limit = null)
+    public static function getAll($select = [], $where = [], $orderBy = 'tags.id desc', $limit = null)
     {
-    	$listing = ProductSubCategories::orderByRaw($orderBy);
+    	$listing = ProductCategories::orderByRaw($orderBy);
 
     	if(!empty($select))
     	{
@@ -96,7 +93,7 @@ class ProductSubCategories extends AppModel
     	else
     	{
     		$listing->select([
-    			'product_sub_categories.*'
+    			'tags.*'
     		]);
     	}
 
@@ -133,7 +130,7 @@ class ProductSubCategories extends AppModel
     */
     public static function getAllCategorySubCategory($ids = [])
     {
-        $listing = ProductSubCategories::select([
+        $listing = ProductCategories::select([
                 'id',
                 'parent_id',
                 'title',
@@ -152,7 +149,7 @@ class ProductSubCategories extends AppModel
             $finalSubCategories[$value->parent_id][] = $value;
         }
 
-        $listing = ProductSubCategories::select([
+        $listing = ProductCategories::select([
                 'id',
                 'parent_id',
                 'title'
@@ -184,7 +181,7 @@ class ProductSubCategories extends AppModel
     */
     public static function get($id)
     {
-    	$record = ProductSubCategories::where('id', $id)
+    	$record = ProductCategories::where('id', $id)
             ->first();
 
 	    return $record;
@@ -195,9 +192,9 @@ class ProductSubCategories extends AppModel
     * @param $where
     * @param $orderBy
     */
-    public static function getRow($where = [], $orderBy = 'product_sub_categories.id desc')
+    public static function getRow($where = [], $orderBy = 'tags.id desc')
     {
-    	$record = ProductSubCategories::orderByRaw($orderBy);
+    	$record = ProductCategories::orderByRaw($orderBy);
 
 	    foreach($where as $query => $values)
 	    {
@@ -221,7 +218,7 @@ class ProductSubCategories extends AppModel
     */
     public static function create($data)
     {
-    	$category = new ProductSubCategories();
+    	$category = new ProductCategories();
 
     	foreach($data as $k => $v)
     	{
@@ -253,7 +250,7 @@ class ProductSubCategories extends AppModel
     */
     public static function modify($id, $data)
     {
-    	$category = ProductSubCategories::find($id);
+    	$category = ProductCategories::find($id);
 
     	foreach($data as $k => $v)
     	{
@@ -286,7 +283,7 @@ class ProductSubCategories extends AppModel
     {
     	if(!empty($ids))
     	{
-    		return ProductSubCategories::whereIn('product_sub_categories.id', $ids)
+    		return ProductCategories::whereIn('tags.id', $ids)
 		    		->update($data);
 	    }
 	    else
@@ -302,7 +299,7 @@ class ProductSubCategories extends AppModel
     */
     public static function remove($id)
     {
-    	$category = ProductSubCategories::find($id);
+    	$category = ProductCategories::find($id);
     	return $category->delete();
     }
 
@@ -315,12 +312,13 @@ class ProductSubCategories extends AppModel
     {
     	if(!empty($ids))
     	{
-    		return ProductSubCategories::whereIn('product_sub_categories.id', $ids)
+    		return ProductCategories::whereIn('tags.id', $ids)
 		    		->delete();
 	    }
 	    else
 	    {
 	    	return null;
 	    }
+
     }
 }

@@ -63,13 +63,13 @@ const dashboardRoutes = [
         meta: { permission: 'add product' }
       },
       {
-        path: 'product/view',
+        path: 'product/:id/view',
         name: 'ProductViewPage',
         component: () => import('@/pages/dashboard/products/view.vue'),  // Product view page
-        meta: { permission: 'view product' }
+        meta: { permission: 'view products' }
       },
       {
-        path: 'product/edit',
+        path: 'product/:id/edit',
         name: 'ProductEditPage',
         component: () => import('@/pages/dashboard/products/edit.vue'),  // Product edit page
         meta: { permission: 'delete product' }

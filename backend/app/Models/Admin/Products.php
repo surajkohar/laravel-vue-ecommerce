@@ -10,8 +10,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Libraries\FileSystem;
 use Illuminate\Support\Str;
 use App\Libraries\General;
-use App\Models\Admin\Brands as AdminBrands;
-use App\Models\Brands;
 
 class Products extends AppModel
 {
@@ -19,7 +17,7 @@ class Products extends AppModel
     protected $primaryKey = 'id';
     public $timestamps = false;
 
-
+    protected $guarded = [];
     /**
      * The attributes that should be cast to native types.
      *
@@ -28,93 +26,66 @@ class Products extends AppModel
     protected $casts = [
         'tags' => 'array',
     ];
-    
+
     /**** ONLY USE FOR MAIN TALBLES NO NEED TO USE FOR RELATION TABLES OR DROPDOWNS OR SMALL SECTIONS ***/
     use SoftDeletes;
 
-    /**
-    * Product -> Colours belongsToMany relation
-    *
-    * @return Colours
-    */
-    public function colors()
+    public function category()
     {
-        return $this->belongsToMany(Colours::class, 'product_colors', 'product_id', 'color_id');
-    }    
-
-    /**
-    * Product -> ProductSubCategories belongsToMany relation
-    *
-    * @return ProductSubCategories
-    */
-    public function subCategories()
-    {
-        return $this->belongsToMany(ProductSubCategories::class, 'product_sub_category_relation', 'product_id', 'sub_category_id');
+        return $this->belongsTo(ProductCategories::class, 'category_id');
     }
 
-    /**
-    * Product -> ProductCategories belongsToMany relation
-    *
-    * @return ProductCategories
-    */
-    public function categories()
+    public function subcategories()
     {
-        return $this->belongsTo(ProductCategories::class, 'category_id', 'id');
+        return $this->belongsToMany(
+            ProductSubCategories::class, // your actual subcategory model
+            'product_subcategories',     // pivot  table name
+            'product_id',                // foreign key on pivot pointing to products
+            'subcategory_id'            // foreign key on pivot pointing to subcategories
+        );
     }
 
-    /**
-    * Product -> Brands belongsToMany relation
-    *
-    * @return Brands
-    */
+
+
     public function brands()
     {
-        return $this->belongsToMany(AdminBrands::class, 'brand_product', 'product_id', 'brand_id');
+        return $this->belongsTo(Brands::class, 'brands_id');
     }
 
-    /**
-    * Product -> Sizes belongsToMany relation
-    *
-    * @return Sizes
-    */
+    public function colors()
+    {
+        return $this->belongsToMany(Colours::class, 'product_color');
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'product_tag');
+    }
+
     public function sizes()
     {
-        return $this->belongsToMany(Sizes::class, 'product_sizes', 'product_id', 'size_id');
+        return $this->belongsToMany(Sizes::class, 'product_sizes')->withPivot('quantity');
     }
 
-    /**
-    * Get resize images
-    *
-    * @return array
-    */
-    public function getResizeImagesAttribute()
+    public function variants()
     {
-        return $this->image ? FileSystem::getAllSizeImages($this->image) : null;
+        return $this->hasMany(ProductVariant::class, 'product_id');
     }
 
-    /**
-    * Products -> Shops belongsTO relation
-    * 
-    * @return Shops
-    */
-    public function shop()
-    {
-        return $this->belongsTo(Shops::class, 'shop_id', 'id');
-    }
 
     /**
     * Products -> Users belongsTO relation
-    * 
+    *
     * @return Users
     */
     public function users()
     {
-        return $this->belongsTo(Users::class, 'user_id', 'id');
+        return $this->belongsTo(users::class, 'user_id', 'id');
     }
 
     /**
     * Products -> Admins belongsTO relation
-    * 
+    *
     * @return Admins
     */
     public function owner()
@@ -128,45 +99,38 @@ class Products extends AppModel
     * @param $limit
     */
 
-    public static function getListing(Request $request, $where = [])
+    public static function getListing(Request $request, array $where = [])
     {
-    	$orderBy = $request->get('sort') ? $request->get('sort') : 'products.id';
-    	$direction = $request->get('direction') ? $request->get('direction') : 'desc';
-    	$page = $request->get('page') ? $request->get('page') : 1;
-    	$limit = self::$paginationLimit;
-    	$offset = ($page - 1) * $limit;
-    	
-    	$listing = Products::select([
-	    		'products.*',
-                'shop_owner.id as shop_owner_id',
-                DB::raw('concat(shop_owner.first_name, " ", (CASE WHEN shop_owner.last_name is not null THEN shop_owner.last_name ELSE "" END)) as shop_owner_name'),
-	    	])
-            ->leftJoin('users as shop_owner', 'shop_owner.id', '=', 'products.user_id')
-	    	->orderBy($orderBy, $direction);
+        $orderBy = $request->get('sort_field', 'products.id');
+        $direction = in_array(strtolower($request->get('sort_direction')), ['asc', 'desc'])
+            ? $request->get('sort_direction')
+            : 'desc';
 
-	    if(!empty($where))
-	    {
-	    	foreach($where as $query => $values)
-	    	{
-	    		if(is_array($values))
-                    $listing->whereRaw($query, $values);
-                elseif(!is_numeric($query))
-                    $listing->where($query, $values);
-                else
-                    $listing->whereRaw($values);
-	    	}
-	    }
+        $page = max(1, (int)$request->get('page', 1));
+        $limit = max(1, (int)$request->get('per_page', self::$paginationLimit));
+        $offset = ($page - 1) * $limit;
 
-	    // Put offset and limit in case of pagination
-	    if($page !== null && $page !== "" && $limit !== null && $limit !== "")
-	    {
-	    	$listing->offset($offset);
-	    	$listing->limit($limit);
-	    }
-        
-	    $listing = $listing->paginate($limit);
+        $query = Products::select([
+            'products.*',
+            'users.name as owner_first_name',
+            'pc.title as category_title',
+            'b.title as brand_title'
+            // 'brands.title as brand',
+        ])
+            ->leftJoin('product_categories as pc','pc.id','=','products.category_id')
+            ->leftJoin('brands as b','b.id','=','products.brands_id')
+            ->leftJoin('users', 'users.id', '=', 'products.created_by')
+            ->orderBy($orderBy, $direction);
 
-	    return $listing;
+        foreach ($where as $condition) {
+            if (is_array($condition)) {
+                $query->whereRaw($condition[0], $condition[1]);
+            } else {
+                $query->whereRaw($condition);
+            }
+        }
+
+        return $query->paginate($limit);
     }
 
     /**
@@ -187,7 +151,7 @@ class Products extends AppModel
     	{
     		$listing->select([
     			'products.*'
-    		]);	
+    		]);
     	}
 
 	    if(!empty($where))
@@ -202,7 +166,7 @@ class Products extends AppModel
                     $listing->whereRaw($values);
 	    	}
 	    }
-	    
+
 	    if($limit !== null && $limit !== "")
 	    {
 	    	$listing->limit($limit);
@@ -241,7 +205,7 @@ class Products extends AppModel
                 },
             ])
             ->first();
-            
+
 	    return $record;
     }
 
@@ -263,7 +227,7 @@ class Products extends AppModel
             else
                 $record->whereRaw($values);
 	    }
-	    
+
 	    $record = $record->limit(1)->first();
 
 	    return $record;
@@ -333,7 +297,7 @@ class Products extends AppModel
 	    }
     }
 
-    
+
     /**
     * To update all
     * @param $id
@@ -480,12 +444,12 @@ class Products extends AppModel
                     $relation->length = $size->length;
                     $relation->price = isset($sizeData['price']) ? $sizeData['price'] : null;
                     $relation->sale_price = isset($sizeData['sale_price']) ? $sizeData['sale_price'] : null;
-                    $relation->color_id = $colorId; 
-                    $relation->status = isset($sizeData['status']) ? $sizeData['status'] : 0; 
+                    $relation->color_id = $colorId;
+                    $relation->status = isset($sizeData['status']) ? $sizeData['status'] : 0;
                     $relation->save();
                 }
             }
         }
     }
-    
+
 }

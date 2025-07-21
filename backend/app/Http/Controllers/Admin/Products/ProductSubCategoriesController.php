@@ -6,9 +6,11 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Admin\Permissions;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\ApiController;
+use App\Models\Admin\ProductCategories;
 use App\Models\Admin\ProductSubCategories;
 use GrahamCampbell\ResultType\Success;
 use Illuminate\Support\Facades\Log;
+use Symfony\Contracts\Service\Attribute\Required;
 
 class ProductSubCategoriesController extends ApiController
 {
@@ -70,6 +72,7 @@ class ProductSubCategoriesController extends ApiController
 
     function add(Request $request)
     {
+                Log::info('Request Data:', $request->all());
         try {
             if ($request->isMethod('post')) {
                 $data = $request->toArray();
@@ -81,6 +84,9 @@ class ProductSubCategoriesController extends ApiController
                         'title' => [
                             'required',
                             Rule::unique('product_sub_categories')->whereNull('deleted_at')
+                        ],
+                        'category_ids' =>[
+                            'Required'
                         ],
                         'description' => [
                             'nullable'
@@ -121,7 +127,8 @@ class ProductSubCategoriesController extends ApiController
 
     function edit(Request $request, $id)
     {
-        $category = ProductSubCategories::get($id);
+        $subcategory = ProductSubCategories::get($id);
+        $categories = ProductCategories::all();
         if ($request->isMethod('put')) {
             $data = $request->toArray();
             $validator = Validator::make(
@@ -129,7 +136,10 @@ class ProductSubCategoriesController extends ApiController
                 [
                     'title' => [
                         'required',
-                        Rule::unique('product_sub_categories')->ignore($category->id)->whereNull('deleted_at'),
+                        Rule::unique('product_sub_categories')->ignore($subcategory->id)->whereNull('deleted_at'),
+                    ],
+                    'category_ids' => [
+                        'Required'
                     ],
                     'description' => [
                         'nullable'
@@ -162,7 +172,8 @@ class ProductSubCategoriesController extends ApiController
 
         return response()->json([
             'status' => true,
-            'category' => $category
+            'subcategory' => $subcategory,
+            'categories' => $categories
         ]);
     }
 

@@ -9,14 +9,11 @@ use App\Libraries\FileSystem;
 use Illuminate\Support\Str;
 use App\Libraries\General;
 
-class Colours extends AppModel
+class SubCategory extends AppModel
 {
-    protected $table = 'colours';
+    protected $table = 'product_subcategories';
     protected $primaryKey = 'id';
     public $timestamps = false;
-
-    /**** ONLY USE FOR MAIN TALBLES NO NEED TO USE FOR RELATION TABLES OR DROPDOWNS OR SMALL SECTIONS ***/
-    // use SoftDeletes;
 
     /**
     * Get resize images
@@ -46,18 +43,18 @@ class Colours extends AppModel
 
     public static function getListing(Request $request, $where = [])
     {
-    	$orderBy = $request->get('sort') ? $request->get('sort') : 'colours.id';
+    	$orderBy = $request->get('sort') ? $request->get('sort') : 'SubCategory.id';
     	$direction = $request->get('direction') ? $request->get('direction') : 'desc';
     	$page = $request->get('page') ? $request->get('page') : 1;
     	$limit = self::$paginationLimit;
     	$offset = ($page - 1) * $limit;
 
-        $listing = Colours::select([
-            'colours.*',
+        $listing = SubCategory::select([
+            'product_subcategories.*',
             'owner.first_name as owner_first_name',
             'owner.last_name as owner_last_name'
         ])
-        ->leftJoin('admins as owner', 'owner.id', '=', 'colours.created_by')
+        ->leftJoin('admins as owner', 'owner.id', '=', 'SubCategory.created_by')
         ->orderBy($orderBy, $direction);
 
 	    if(!empty($where))
@@ -91,9 +88,9 @@ class Colours extends AppModel
     * @param $orderBy
     * @param $limit
     */
-    public static function getAll($select = [], $where = [], $orderBy = 'colours.id desc', $limit = null)
+    public static function getAll($select = [], $where = [], $orderBy = 'product_subcategories.id desc', $limit = null)
     {
-    	$listing = Colours::orderByRaw($orderBy);
+    	$listing = SubCategory::orderByRaw($orderBy);
 
     	if(!empty($select))
     	{
@@ -102,7 +99,7 @@ class Colours extends AppModel
     	else
     	{
     		$listing->select([
-    			'colours.*'
+    			'product_subcategories.*'
     		]);
     	}
 
@@ -135,7 +132,7 @@ class Colours extends AppModel
     */
     public static function get($id)
     {
-    	$record = Colours::where('id', $id)
+    	$record = SubCategory::where('id', $id)
             ->with([
                 'owner' => function($query) {
                     $query->select(['id', 'first_name', 'last_name', 'status']);
@@ -151,9 +148,9 @@ class Colours extends AppModel
     * @param $where
     * @param $orderBy
     */
-    public static function getRow($where = [], $orderBy = 'colours.id desc')
+    public static function getRow($where = [], $orderBy = 'product_subcategories.id desc')
     {
-    	$record = Colours::orderByRaw($orderBy);
+    	$record = SubCategory::orderByRaw($orderBy);
 
 	    foreach($where as $query => $values)
 	    {
@@ -177,19 +174,19 @@ class Colours extends AppModel
     */
     public static function create($data)
     {
-    	$staff = new Colours();
+    	$size = new SubCategory();
 
     	foreach($data as $k => $v)
     	{
-    		$staff->{$k} = $v;
+    		$size->{$k} = $v;
     	}
 
-        $staff->created_by = AdminAuth::getLoginId();
-    	$staff->created = date('Y-m-d H:i:s');
-    	$staff->modified = date('Y-m-d H:i:s');
-	    if($staff->save())
+        // $size->created_by = AdminAuth::getLoginId();
+    	$size->created = date('Y-m-d H:i:s');
+    	$size->modified = date('Y-m-d H:i:s');
+	    if($size->save())
 	    {
-	    	return $staff;
+	    	return $size;
 	    }
 	    else
 	    {
@@ -205,16 +202,16 @@ class Colours extends AppModel
     */
     public static function modify($id, $data)
     {
-    	$staff = Colours::find($id);
+    	$size = SubCategory::find($id);
     	foreach($data as $k => $v)
     	{
-    		$staff->{$k} = $v;
+    		$size->{$k} = $v;
     	}
 
-    	$staff->modified = date('Y-m-d H:i:s');
-	    if($staff->save())
+    	$size->modified = date('Y-m-d H:i:s');
+	    if($size->save())
 	    {
-	    	return $staff;
+	    	return $size;
 	    }
 	    else
 	    {
@@ -232,7 +229,7 @@ class Colours extends AppModel
     {
     	if(!empty($ids))
     	{
-    		return Colours::whereIn('colours.id', $ids)
+    		return SubCategory::whereIn('product_subcategories.id', $ids)
 		    		->update($data);
 	    }
 	    else
@@ -248,9 +245,9 @@ class Colours extends AppModel
     */
     public static function remove($id)
     {
-    	$staff = Colours::find($id);
-        $images = $staff->getResizeImagesAttribute();
-    	if($staff->delete())
+    	$size = SubCategory::find($id);
+        $images = $size->getResizeImagesAttribute();
+    	if($size->delete())
         {
             if($images)
             {
@@ -284,7 +281,7 @@ class Colours extends AppModel
     	{
     		foreach($ids as $id)
             {
-                Colours::remove($id);
+                SubCategory::remove($id);
             }
 
             return true;

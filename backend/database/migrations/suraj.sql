@@ -41,3 +41,68 @@ CREATE TABLE `sizes` (
   `created` timestamp NULL,
   `modified` timestamp NULL
 );
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    gender VARCHAR(50),
+    description TEXT,
+    purchase_price NUMERIC(10, 2),
+    price NUMERIC(10, 2),
+    sku VARCHAR(100),
+    stock INT,
+    category_id INT REFERENCES categories(id),
+    category_slug VARCHAR(255),
+    main_image_name VARCHAR(255),
+    main_image_type VARCHAR(100),
+    main_image_size INT,
+    size_guide_name VARCHAR(255),
+    size_guide_type VARCHAR(100),
+    size_guide_size INT,
+    created TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    modified TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE product_subcategories (
+    id SERIAL PRIMARY KEY,
+    product_id INT REFERENCES products(id) ON DELETE CASCADE,
+    subcategory_id INT NOT NULL
+);
+
+
+CREATE TABLE product_variants (
+    id SERIAL PRIMARY KEY,
+    product_id INT REFERENCES products(id) ON DELETE CASCADE,
+    color VARCHAR(20),
+    color_name VARCHAR(50)
+);
+
+
+CREATE TABLE product_variant_sizes (
+    id SERIAL PRIMARY KEY,
+    variant_id INT REFERENCES product_variants(id) ON DELETE CASCADE,
+    size_id INT REFERENCES sizes(id)
+);
+
+
+CREATE TABLE product_variant_images (
+    id SERIAL PRIMARY KEY,
+    variant_id INT REFERENCES product_variants(id) ON DELETE CASCADE,
+    image_name VARCHAR(255),
+    image_type VARCHAR(100),
+    image_size INT
+);
+
+
+CREATE TABLE sizes (
+    id SERIAL PRIMARY KEY,
+    size_title VARCHAR(50),
+    type VARCHAR(50), -- e.g., clothing/shoes
+    created TIMESTAMP,
+    modified TIMESTAMP
+);
+
+ALTER TABLE `products`
+ADD `status` tinyint NULL DEFAULT '1' AFTER `size_guide_size`;
+

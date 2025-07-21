@@ -47,9 +47,9 @@
                 v-model="product.category_id"
                 placeholder="Select Category"
                 :options="categories"
-                option-label="name"
+                option-label="title"
                 option-value="id"
-                @update:modelValue="updateCategory"
+                @update:modelValue="filterSubCategory"
               />
             </div>
           </div>
@@ -100,9 +100,8 @@
                 v-model="product.subcategory_ids"
                 :options="filteredSubCategories"
                 placeholder="Select subcategories"
-                option-label="name"
-                option-value="slug"
-                @update:modelValue="updateSubCategories"
+                option-label="title"
+                option-value="id"
               />
             </div>
             <div class="form-group">
@@ -111,9 +110,8 @@
                 v-model="product.brand"
                 placeholder="Select brand"
                 :options="brands"
-                option-label="name"
+                option-label="title"
                 option-value="slug"
-                @update:modelValue="updateCategory"
               />
             </div>
           </div>
@@ -306,13 +304,13 @@
                 >
                 <div class="size-options">
                   <button
-                    v-for="size in availableSizes"
+                    v-for="size in sizes"
                     :key="size"
                     class="size-option"
                     :class="{ selected: isSizeSelected(activeVariant, size) }"
                     @click="toggleSize(activeVariant, size)"
                   >
-                    {{ size }}
+                    {{ size.size_title }}
                   </button>
                 </div>
               </div>
@@ -400,8 +398,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { API } from '@/utils/config';
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import Select from "@/components/Select.vue";
@@ -411,69 +410,73 @@ const router = useRouter();
 const fileInput = ref(null);
 const mainImageInput = ref(null);
 const sizeGuideInput = ref(null);
+const loading = ref(false);
+const categories = ref([]);
+const subCategories = ref([]);
+const brands = ref([]);
+const sizes = ref([]);
+const availableColors = ref([]);
+const token = localStorage.getItem('auth_token');
 
-// Categories and subcategories structure
-const categories = [
-  { id: 1, slug: "t-shirt", name: "T Shirt" },
-  { id: 2, slug: "hoodies", name: "Hoodies" },
-  { id: 3, slug: "bottom", name: "Bottom" },
-  { id: 4, slug: "headwear", name: "Headwear" },
-  { id: 5, slug: "sweatshirts", name: "Sweatshirts" },
-  { id: 6, slug: "jacket", name: "Jacket" },
-  { id: 7, slug: "hi-vis", name: "Hi Vis" },
-];
+onMounted( async() => {
+  await fetchData();
+});
 
-const subCategories = [
-  { id: 1, slug: 'plain', name: 'Plain', category_id: 1, category_slug: 't-shirt' },
-  { id: 2, slug: 'full-sleeve', name: 'Full Sleeve', category_id: 1, category_slug: 't-shirt' },
-  { id: 3, slug: 'short-sleeve', name: 'Short Sleeve', category_id: 1, category_slug: 't-shirt' },
-  { id: 4, slug: 'v-neck', name: 'V Neck', category_id: 1, category_slug: 't-shirt' },
-  { id: 5, slug: 'round-neck', name: 'Round Neck', category_id: 1, category_slug: 't-shirt' },
-  { id: 6, slug: 'vest', name: 'Vest', category_id: 7, category_slug: 'hi-vis' },
-  { id: 7, slug: 'cap', name: 'Cap', category_id: 4, category_slug: 'headwear' },
-  { id: 8, slug: 'shorts', name: 'Shorts', category_id: 3, category_slug: 'bottom' },
-  { id: 9, slug: 'trouser', name: 'Trouser', category_id: 3, category_slug: 'bottom' },
-  { id: 10, slug: 'zip-up', name: 'Zip Up', category_id: 2, category_slug: 'hoodies' },
-  { id: 11, slug: 'pullover', name: 'Pullover', category_id: 2, category_slug: 'hoodies' },
-  { id: 12, slug: 'sleeveless', name: 'Sleeveless', category_id: 2, category_slug: 'hoodies' },
-  { id: 13, slug: 'joggers', name: 'Joggers', category_id: 3, category_slug: 'bottom' },
-  { id: 14, slug: 'jeans', name: 'Jeans', category_id: 3, category_slug: 'bottom' },
-  { id: 15, slug: 'beanie', name: 'Beanie', category_id: 4, category_slug: 'headwear' },
-  { id: 16, slug: 'headband', name: 'Headband', category_id: 4, category_slug: 'headwear' },
-  { id: 17, slug: 'crewneck', name: 'Crewneck', category_id: 5, category_slug: 'sweatshirts' },
-  { id: 18, slug: 'hooded', name: 'Hooded', category_id: 5, category_slug: 'sweatshirts' },
-  { id: 19, slug: 'zip', name: 'Zip', category_id: 5, category_slug: 'sweatshirts' },
-  { id: 20, slug: 'bomber', name: 'Bomber', category_id: 6, category_slug: 'jacket' },
-  { id: 21, slug: 'denim', name: 'Denim', category_id: 6, category_slug: 'jacket' },
-  { id: 22, slug: 'parka', name: 'Parka', category_id: 6, category_slug: 'jacket' },
-  { id: 23, slug: 'windbreaker', name: 'Windbreaker', category_id: 6, category_slug: 'jacket' }
-]
+const fetchData = async () => {
+  try {
+    loading.value = true;
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      router.push('/login');
+    }
 
-const brands = [
-  {id:1, slug: 'awdis', name: 'Awdis' },
-  {id:2, slug: 'uneek', name: 'Uneek' },
-  {id:3, slug: 'beechfield', name: 'Beechfield' }
-]
+    const response = await fetch(`${API.BACKEND_URL}/product-fetch-data`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
 
-const availableSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL']
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch categories');
+    }
+
+    const data = await response.json();
+        categories.value = data.category;
+        subCategories.value =data.subCategory;
+        brands.value = data.brands;
+        sizes.value = data.sizes;
+        availableColors.value = data.colors.map(c => ({
+          hex: c.color_code,
+          name: c.title,
+        }));
+      } catch (err) {
+    console.error('Error fetching categories:', err);
+  } finally {
+    loading.value = false;
+  }
+};
+
 const genders =[
     { id: '1', slug:'men', title: 'Men' },
     { id: '2',slug:'women', title: 'Women' },
     { id: '3',slug:'unisex', title: 'Unisex' },
     { id: '4',slug:'kids', title: 'Kids' },
 ]
-const availableColors = [
-  { hex: "#FF0000", name: "Red" },
-  { hex: "#00FF00", name: "Green" },
-  { hex: "#0000FF", name: "Blue" },
-  { hex: "#FFFF00", name: "Yellow" },
-  { hex: "#FF00FF", name: "Magenta" },
-  { hex: "#00FFFF", name: "Cyan" },
-  { hex: "#000000", name: "Black" },
-  { hex: "#FFFFFF", name: "White" },
-  { hex: "#808080", name: "Gray" },
-  { hex: "#FFA500", name: "Orange" },
-];
+// const availableColors = [
+//   { hex: "#FF0000", name: "Red" },
+//   { hex: "#00FF00", name: "Green" },
+//   { hex: "#0000FF", name: "Blue" },
+//   { hex: "#FFFF00", name: "Yellow" },
+//   { hex: "#FF00FF", name: "Magenta" },
+//   { hex: "#00FFFF", name: "Cyan" },
+//   { hex: "#000000", name: "Black" },
+//   { hex: "#FFFFFF", name: "White" },
+//   { hex: "#808080", name: "Gray" },
+//   { hex: "#FFA500", name: "Orange" },
+// ];
 
 // Editor configuration
 const editorOptions = {
@@ -521,38 +524,39 @@ const product = ref({
 });
 
 const activeVariant = ref(null);
+
+const filterSubCategory = () => {
+  product.value.subcategory_ids = [];
+};
+
+// Computed property to filter subcategories based on selected category
 const filteredSubCategories = computed(() => {
-  if (!product.value.category_id) return [];
-  return subCategories.filter(
-    (sub) => sub.category_id === product.value.category_id
+  if (!product.value.category_id) return []; 
+  const filtered = subCategories.value.filter(sub => 
+    sub.category_ids && sub.category_ids.includes(product.value.category_id)
   );
+  return filtered;
 });
+
 // Computed
 const selectedColors = computed(() =>
   product.value.variants.map((v) => v.color)
 );
-// Methods
 
-const updateCategory = (categoryId) => {
-  const category = categories.find((c) => c.id === categoryId);
-  product.value.category_id = category?.id || null;
-  product.value.category_slug = category?.slug || "";
-  product.value.subcategory_ids = [];
-  product.value.subcategory_slugs = [];
-};
+// const updateCategory = (categoryId) => {
+//   const category = categories.find((c) => c.id === categoryId);
+//   product.value.category_id = category?.id || null;
+//   product.value.category_slug = category?.slug || "";
+//   product.value.subcategory_ids = [];
+//   product.value.subcategory_slugs = [];
+// };
 
-const updateSubCategories = (selectedIds) => {
-  product.value.subcategory_ids = selectedIds;
-  product.value.subcategory_slugs = selectedIds
-    .map((id) => {
-      const sub = subCategories.find((s) => s.id === id);
-      return sub?.slug || "";
-    })
-    .filter((slug) => slug);
-};
+// const updateSubCategories = (selectedIds) => {
+//   product.value.subcategory_ids = selectedIds;
+// };
 
 const getColorName = (hex) => {
-  return availableColors.find((c) => c.hex === hex)?.name || hex;
+  return availableColors.value.find((c) => c.hex === hex)?.name || hex;
 };
 
 const isColorSelected = (hex) => {
@@ -697,75 +701,112 @@ const removeSizeGuide = () => {
 };
 
 const saveProduct = () => {
-  // Validate required fields
   if (!product.value.name || !product.value.category_id || !product.value.price) {
     alert("Please fill in all required fields");
     return;
   }
 
-  // Prepare data for submission
-  const submissionData = {
-    name: product.value.name,
-    gender: product.value.gender,
-    description: product.value.description,
-    purchasePrice: product.value.purchasePrice,
-    price: product.value.price,
-    category_id:product.value.category_id,
-    subcategory_ids:product.value.subcategory_ids,
-    category:
-      categories.find((c) => c.id === product.value.category)?.name ||
-      product.value.category,
-    subCategory:
-      subCategories.find((sc) => sc.id === product.value.subCategory)?.name ||
-      product.value.subCategory,
-    brand:
-      brands.find((b) => b.id === product.value.brand)?.name ||
-      product.value.brand,
-    sku: product.value.sku,
-    stock: product.value.stock,
-    mainImage: product.value.mainImage
-      ? {
-          name: product.value.mainImage.file.name,
-          type: product.value.mainImage.file.type,
-          size: product.value.mainImage.file.size,
-          preview: product.value.mainImage.preview,
-        }
-      : null,
-    sizeGuide: product.value.sizeGuide
-      ? {
-          name: product.value.sizeGuide.name,
-          type: product.value.sizeGuide.type,
-          size: product.value.sizeGuide.size,
-        }
-      : null,
-    variants: product.value.variants.map((variant) => ({
-      color: variant.color,
-      colorName: getColorName(variant.color),
-      sizes: variant.sizes,
-      images: variant.images.map((img) => ({
-        name: img.file.name,
-        type: img.file.type,
-        size: img.file.size,
-        preview: img.preview,
-      })),
-    })),
-    createdAt: new Date().toISOString(),
-  };
+  const formData = new FormData();
 
-  // Log the submission data to console
-  console.log(
-    "Product Submission Data:",
-    JSON.parse(JSON.stringify(submissionData))
-  );
+  // Product Fields (match database)
+  formData.append('name', product.value.name);
+  formData.append('gender', product.value.gender);
+  formData.append('description', product.value.description);
+  formData.append('purchase_price', product.value.purchasePrice);
+  formData.append('price', product.value.price);
+  formData.append('category_id', product.value.category_id);
+  formData.append('category_slug', categories.value.find(c => c.id === product.value.category_id)?.slug || '');
+  formData.append('sku', product.value.sku);
+  formData.append('stock', product.value.stock);
+  formData.append('brand', product.value.brand);
 
-  return;
+  // Main Image
+const mainFile = product.value.mainImage instanceof File
+  ? product.value.mainImage
+  : product.value.mainImage?.file;
 
-  // In a real app, you would upload files to a server here
-  // and then submit the product data with the resulting URLs
+if (mainFile instanceof File) {
+  formData.append('main_image', mainFile);
+} else {
+  console.warn("⚠️ mainImage is not a File", product.value.mainImage);
+}
 
-  // For demo purposes, we'll just navigate back
-  router.push("/admin/products");
+
+  // Size Guide
+  if (product.value.sizeGuide instanceof File) {
+    formData.append('size_guide', product.value.sizeGuide);
+  }
+
+  // Subcategories
+  product.value.subcategory_ids.forEach((id, index) => {
+    formData.append(`subcategory_ids[${index}]`, id);
+  });
+
+  // Variants
+  product.value.variants.forEach((variant, i) => {
+    formData.append(`variants[${i}][color]`, variant.color);
+    formData.append(`variants[${i}][color_name]`, getColorName(variant.color));
+
+    variant.sizes.forEach((size, j) => {
+      formData.append(`variants[${i}][sizes][${j}]`, size.id);
+    });
+
+variant.images.forEach((img, k) => {
+  const file = img instanceof File ? img : img.file; // if wrapped in a .file key
+  if (file instanceof File) {
+    formData.append(`variants[${i}][images][${k}]`, file);
+  } else {
+    console.warn('Skipping non-file image:', img);
+  }
+});
+
+  });
+
+  // ✅ Proper FormData log
+  console.log('--- FormData Contents ---');
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
+
+  save(formData);
 };
+
+
+
+const save = async (submissionData) =>
+{
+  try {
+    const response = await fetch(`${API.BACKEND_URL}/product/add`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: submissionData,
+      
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      if (response.status === 422) {
+        errors.value = data.errors || {}
+      }
+      throw new Error(data.message || 'Failed to save')
+    }
+
+    toast.success('Category created successfully!')
+    setTimeout(() => {
+    router.push("/admin/products");
+    }, 500)
+    } catch (error) {
+    if (!errors.value.title) {
+      toast.error(error.message || 'An error occurred while creating the role');
+    }
+  } finally {
+    loading.value = false
+  }
+}
 
 const goBack = () => {
   router.go(-1);

@@ -28,6 +28,17 @@
             <span class="error-message" v-if="errors.title">{{ errors.title[0] }}</span>
           </div>
 
+          <div class="form-group">
+              <label>Categories</label>
+              <MultiSelect
+                v-model="category_ids"
+                :options="categories"
+                placeholder="Select categories"
+                option-label="title"
+                option-value="id"
+              />
+                <span class="error-message" v-if="errors.category_ids">{{ errors.category_ids[0] }}</span>
+            </div>
           <div class="form-group full-width-field">
             <label>Description</label>
             <input 
@@ -64,6 +75,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter,useRoute } from 'vue-router'
 import { API } from '@/utils/config';
 import { toast } from 'vue3-toastify'
+import MultiSelect from "@/components/MultiSelect.vue";
 
 const router = useRouter()
 const route = useRoute(); 
@@ -72,6 +84,8 @@ const title = ref('')
 const desc = ref('')
 const errors = ref({})
 const loading = ref(false)
+const categories = ref([])
+const category_ids = ref([])
 
 const token = localStorage.getItem('auth_token');
 
@@ -87,7 +101,8 @@ const save = async () =>{
       },
       body: JSON.stringify({
         title: title.value,
-        description: desc.value
+        description: desc.value,
+        category_ids:category_ids.value
       })
       
     })
@@ -131,10 +146,13 @@ const fetchCategories = async() => {
 
     const data = await response.json()
     if (response.ok) {
-       title.value = data.category.title
-       desc.value = data.category.description
+       title.value = data.subcategory.title;
+       desc.value = data.subcategory.description;
+       category_ids.value = data.subcategory.category_ids ?? [];
+       categories.value = data.categories;
+    }else{
+     throw new Error(data.message || 'Failed to fetch')
     }
-    throw new Error(data.message || 'Failed to save')
 }
 
 const goBack = () => {

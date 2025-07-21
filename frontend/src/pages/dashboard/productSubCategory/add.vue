@@ -1,7 +1,7 @@
 <template>
   <div class="add-product-container">
     <div class="header-section-add">
-      <h1>Add new category</h1>
+      <h1>Add new Sub category</h1>
       <div class="action-buttons">
         <button class="cancel-button" @click="goBack">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -27,6 +27,18 @@
             >
             <span class="error-message" v-if="errors.title">{{ errors.title[0] }}</span>
           </div>
+
+            <div class="form-group">
+              <label>Categories</label>
+              <MultiSelect
+                v-model="category_ids"
+                :options="categories"
+                placeholder="Select categories"
+                option-label="title"
+                option-value="id"
+              />
+                <span class="error-message" v-if="errors.category_ids">{{ errors.category_ids[0] }}</span>
+            </div>
 
           <div class="form-group full-width-field">
             <label>Description</label>
@@ -64,16 +76,48 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { API } from '@/utils/config';
 import { toast } from 'vue3-toastify'
+import MultiSelect from "@/components/MultiSelect.vue";
 
 const router = useRouter()
 const title = ref('')
 const desc = ref('')
 const errors = ref({})
 const loading = ref(false)
+const categories = ref([])
+const category_ids = ref([])
 
 const token = localStorage.getItem('auth_token');
 
+onMounted( async()=>{
+  await fetchCategory();
+})
+
+const fetchCategory =  async() =>{
+  try{
+    if (!token) {
+      router.push('/login');
+    }
+    const response = await fetch(`${API.BACKEND_URL}/product-fetch-data`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json(); 
+    if (response.ok) {
+      categories.value = data.category; // Use 'data.category' to set categories
+    } else {
+      toast.error(data.message || 'Failed to fetch categories'); // Handle errors
+    }
+  }catch(error){
+      toast.error(error.message || 'An error occurred');
+  }
+}
+
 const save = async () =>{
+  console.log('category_ids',category_ids.value);
   try {
     const response = await fetch(`${API.BACKEND_URL}/product-subcategories/add`, {
       method: 'POST',
@@ -84,7 +128,8 @@ const save = async () =>{
       },
       body: JSON.stringify({
         title: title.value,
-        description: desc.value
+        description: desc.value,
+        category_ids:category_ids.value,
       })
       
     })
