@@ -29,10 +29,12 @@ class ProductVariant extends AppModel
         return $this->belongsTo(Products::class, 'product_id');
     }
 
-    public function sizes()
-    {
-        return $this->belongsToMany(Sizes::class, 'product_variant_sizes', 'variant_id', 'size_id');
-    }
+public function sizes()
+{
+    return $this->belongsToMany(Sizes::class, 'product_variant_sizes', 'variant_id', 'size_id')
+                ->withPivot('price');
+}
+
 
     public function images()
 {

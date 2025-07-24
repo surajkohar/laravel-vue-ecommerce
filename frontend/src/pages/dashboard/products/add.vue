@@ -1,262 +1,239 @@
 <template>
   <div class="add-product-container">
     <!-- Header Section -->
-    <div class="header-section-add">
+    <div class="header-section">
       <h1>Add New Product</h1>
       <div class="action-buttons">
-        <button class="cancel-button" @click="goBack">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          Back
+        <button class="btn btn-outline-secondary" @click="goBack">
+          <i class="fas fa-arrow-left"></i> Back
         </button>
       </div>
     </div>
 
     <!-- Main Form -->
     <div class="form-container">
-      <div class="form-card">
+      <div class="card">
         <!-- Basic Information Section -->
-        <div class="form-section">
-          <h2>Basic Information</h2>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Gender</label>
-              <Select
-              placeholder="Select gender"
-                v-model="product.gender"
-                :options="genders"
-                option-label="title"
-                option-value="slug"
-              />
+        <div class="card-body">
+          <h2 class="section-title">Basic Information</h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Gender</label>
+                <Select
+                  placeholder="Select gender"
+                  v-model="product.gender"
+                  :options="genders"
+                  option-label="title"
+                  option-value="slug"
+                />
+              </div>
             </div>
-            <div class="form-group">
-              <label>Category</label>
-              <Select
-                v-model="product.category_id"
-                placeholder="Select Category"
-                :options="categories"
-                option-label="title"
-                option-value="id"
-                @update:modelValue="filterSubCategory"
-              />
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <Select
+                  v-model="product.category_id"
+                  placeholder="Select Category"
+                  :options="categories"
+                  option-label="title"
+                  option-value="id"
+                  @update:modelValue="filterSubCategory"
+                />
+              </div>
             </div>
-          </div>
-          <div class="form-group full-width-field">
-            <label>Title</label>
-            <input
-              type="text"
-              v-model="product.name"
-              placeholder="Enter product name"
-            />
-          </div>
-          <div class="form-group full-width-field">
-            <label>Description</label>
-            <QuillEditor
-              v-model:content="product.description"
-              contentType="html"
-              theme="snow"
-              :options="editorOptions"
-              placeholder="Enter product description"
-            />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Purchase Price (£)</label>
-              <input
-                type="number"
-                v-model.number="product.purchasePrice"
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+            
+            <div class="col-12">
+              <div class="form-group">
+                <label class="form-label">Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="product.name"
+                  placeholder="Enter product name"
+                />
+              </div>
             </div>
-            <div class="form-group">
-              <label>Selling Price (£)</label>
-              <input
-                type="number"
-                v-model.number="product.price"
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+            
+            <div class="col-12">
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <QuillEditor
+                  v-model:content="product.description"
+                  contentType="html"
+                  theme="snow"
+                  :options="editorOptions"
+                  placeholder="Enter product description"
+                />
+              </div>
             </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sub Categories</label>
-              <MultiSelect
-                v-model="product.subcategory_ids"
-                :options="filteredSubCategories"
-                placeholder="Select subcategories"
-                option-label="title"
-                option-value="id"
-              />
-            </div>
-            <div class="form-group">
-              <label>Brand</label>
-              <Select
-                v-model="product.brand"
-                placeholder="Select brand"
-                :options="brands"
-                option-label="title"
-                option-value="slug"
-              />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>SKU</label>
-              <input
-                type="text"
-                v-model="product.sku"
-                placeholder="Product SKU"
-              />
-            </div>
-            <div class="form-group">
-              <label>Stock Quantity</label>
-              <input
-                type="number"
-                v-model.number="product.stock"
-                placeholder="Total stock"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <!-- Main Product Image -->
-          <div class="form-group full-width-field">
-            <label>Main Product Image</label>
-            <div class="image-uploader">
-              <div class="upload-area" @click="triggerMainImageUpload">
-                <template v-if="!product.mainImage">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"
-                    ></path>
-                    <polyline points="16 5 22 5 22 11"></polyline>
-                    <line x1="16" y1="5" x2="22" y2="11"></line>
-                  </svg>
-                  <p>Click to upload main product image</p>
-                </template>
-                <template v-else>
-                  <img
-                    :src="product.mainImage.preview"
-                    alt="Main product image preview"
-                    class="main-image-preview"
+            
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Purchase Price</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    v-model.number="product.purchasePrice"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
                   />
-                </template>
-                <input
-                  type="file"
-                  ref="mainImageInput"
-                  @change="handleMainImageUpload"
-                  accept="image/*"
-                  style="display: none"
-                />
+                </div>
               </div>
-              <button
-                v-if="product.mainImage"
-                class="remove-main-image"
-                @click="removeMainImage"
-              >
-                Remove Image
-              </button>
             </div>
-          </div>
-
-          <!-- Size Guide Upload -->
-          <div class="form-group full-width-field">
-            <label>Size Guide (PDF)</label>
-            <div class="file-uploader">
-              <div class="upload-area" @click="triggerSizeGuideUpload">
-                <template v-if="!product.sizeGuide">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                    ></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                  </svg>
-                  <p>Click to upload size guide (PDF)</p>
-                </template>
-                <template v-else>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                    ></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                  </svg>
-                  <p>{{ product.sizeGuide.name }}</p>
-                </template>
-                <input
-                  type="file"
-                  ref="sizeGuideInput"
-                  @change="handleSizeGuideUpload"
-                  accept=".pdf"
-                  style="display: none"
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Selling Price</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    v-model.number="product.price"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Sub Categories</label>
+                <MultiSelect
+                  v-model="product.subcategory_ids"
+                  :options="filteredSubCategories"
+                  placeholder="Select subcategories"
+                  option-label="title"
+                  option-value="id"
                 />
               </div>
-              <button
-                v-if="product.sizeGuide"
-                class="remove-size-guide"
-                @click="removeSizeGuide"
-              >
-                Remove File
-              </button>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Brand</label>
+                <Select
+                  v-model="product.brand"
+                  placeholder="Select brand"
+                  :options="brands"
+                  option-label="title"
+                  option-value="slug"
+                />
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="product.sku"
+                  placeholder="Product SKU"
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label">Stock Quantity</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  v-model.number="product.stock"
+                  placeholder="Total stock"
+                  min="0"
+                />
+              </div>
+            </div>
+            
+            <div class="col-12">
+              <div class="form-group">
+                <label class="form-label">Main Product Image</label>
+                <div class="image-uploader">
+                  <div 
+                    class="upload-area" 
+                    @click="triggerMainImageUpload"
+                    :class="{ 'has-image': product.mainImage }"
+                  >
+                    <template v-if="!product.mainImage">
+                      <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                      <p>Click to upload main product image</p>
+                      <small class="text-muted">Recommended size: 580×630px</small>
+                    </template>
+                    <template v-else>
+                      <img
+                        :src="product.mainImage.preview"
+                        alt="Main product image preview"
+                        class="main-image-preview"
+                      />
+                    </template>
+                    <input
+                      type="file"
+                      ref="mainImageInput"
+                      @change="handleMainImageUpload"
+                      accept="image/*"
+                      style="display: none"
+                    />
+                  </div>
+                  <button
+                    v-if="product.mainImage"
+                    class="btn btn-danger btn-sm mt-2"
+                    @click="removeMainImage"
+                  >
+                    <i class="fas fa-trash"></i> Remove Image
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-12">
+              <div class="form-group">
+                <label class="form-label">Size Guide (PDF)</label>
+                <div class="file-uploader">
+                  <div 
+                    class="upload-area" 
+                    @click="triggerSizeGuideUpload"
+                    :class="{ 'has-file': product.sizeGuide }"
+                  >
+                    <template v-if="!product.sizeGuide">
+                      <i class="fas fa-file-pdf fa-3x"></i>
+                      <p>Click to upload size guide (PDF)</p>
+                      <small class="text-muted">Max file size: 5MB</small>
+                    </template>
+                    <template v-else>
+                      <i class="fas fa-file-pdf fa-3x"></i>
+                      <p class="file-name">{{ product.sizeGuide.name }}</p>
+                    </template>
+                    <input
+                      type="file"
+                      ref="sizeGuideInput"
+                      @change="handleSizeGuideUpload"
+                      accept=".pdf"
+                      style="display: none"
+                    />
+                  </div>
+                  <button
+                    v-if="product.sizeGuide"
+                    class="btn btn-danger btn-sm mt-2"
+                    @click="removeSizeGuide"
+                  >
+                    <i class="fas fa-trash"></i> Remove File
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Color Variants Section -->
-        <div class="form-section">
-          <h2>Color Variants</h2>
+        <div class="card-body">
+          <h2 class="section-title">Color Variants</h2>
           <div class="color-management">
             <!-- Color Selection -->
-            <div class="color-selection">
-              <label>Select Colors:</label>
+            <div class="color-selection mb-4">
+              <label class="form-label">Select Colors:</label>
               <div class="color-palette">
                 <div
                   v-for="color in availableColors"
@@ -265,79 +242,110 @@
                   :class="{ selected: isColorSelected(color.hex) }"
                   :style="{ backgroundColor: color.hex }"
                   @click="toggleColor(color)"
+                  :title="color.name"
                 >
-                  <span v-if="isColorSelected(color.hex)" class="checkmark"
-                    >✓</span
-                  >
+                  <span v-if="isColorSelected(color.hex)" class="checkmark">
+                    <i class="fas fa-check"></i>
+                  </span>
                 </div>
               </div>
             </div>
 
             <!-- Variant Details Tabs -->
-            <div class="variant-tabs" v-if="product.variants.length > 0">
-              <button
-                v-for="variant in product.variants"
-                :key="variant.color"
-                class="variant-tab"
-                :class="{ active: activeVariant === variant.color }"
-                @click="setActiveVariant(variant.color)"
-              >
-                <span
-                  class="color-swatch"
-                  :style="{ backgroundColor: variant.color }"
-                ></span>
-                {{ getColorName(variant.color) }}
-                <span
-                  class="remove-color"
-                  @click.stop="removeVariant(variant.color)"
-                  >×</span
+            <div class="variant-tabs mb-3" v-if="product.variants.length > 0">
+              <div class="nav nav-pills">
+                <button
+                  v-for="variant in product.variants"
+                  :key="variant.color"
+                  class="nav-link"
+                  :class="{ active: activeVariant === variant.color }"
+                  @click="setActiveVariant(variant.color)"
                 >
-              </button>
+                  <span
+                    class="color-swatch"
+                    :style="{ backgroundColor: variant.color }"
+                  ></span>
+                  {{ getColorName(variant.color) }}
+<button
+  class="btn-close ms-2"
+  style="filter: invert(0); opacity: 0.7;"
+  @click.stop="removeVariant(variant.color)"
+  aria-label="Remove color"
+></button>
+                </button>
+              </div>
             </div>
 
             <!-- Active Variant Details -->
             <div class="variant-details" v-if="activeVariant">
               <!-- Size Selection -->
-              <div class="size-selection">
-                <label
-                  >Available Sizes for {{ getColorName(activeVariant) }}:</label
-                >
-                <div class="size-options">
-                  <button
-                    v-for="size in sizes"
-                    :key="size"
-                    class="size-option"
-                    :class="{ selected: isSizeSelected(activeVariant, size) }"
-                    @click="toggleSize(activeVariant, size)"
-                  >
-                    {{ size.size_title }}
-                  </button>
+              <div class="size-selection mb-4">
+                <h5 class="mb-3">Available Sizes for {{ getColorName(activeVariant) }}</h5>
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Size</th>
+                        <th>Price (£)</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="size in sizes" :key="size.id">
+                        <td>
+                          <div class="form-check">
+                            <input
+                              class="form-check-input"
+                              type="checkbox"
+                              :id="`size-${size.id}`"
+                              :checked="isSizeSelected(activeVariant, size)"
+                              @change="toggleSize(activeVariant, size)"
+                            />
+                            <label class="form-check-label" :for="`size-${size.id}`">
+                              {{ size.size_title }}
+                            </label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+                            <input
+                              type="number"
+                              class="form-control"
+                              :value="getSizePrice(activeVariant, size)"
+                              @input="updateSizePrice(activeVariant, size, $event)"
+                              placeholder="0.00"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          <span v-else class="text-muted">-</span>
+                        </td>
+                        <td>
+                          <button
+                            class="btn btn-sm"
+                            :class="{
+                              'btn-outline-danger': isSizeSelected(activeVariant, size),
+                              'btn-outline-secondary': !isSizeSelected(activeVariant, size)
+                            }"
+                            @click="toggleSize(activeVariant, size)"
+                          >
+                            {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
               <!-- Image Upload -->
               <div class="image-upload-section">
-                <label>Images for {{ getColorName(activeVariant) }}:</label>
+                <h5 class="mb-3">Images for {{ getColorName(activeVariant) }}</h5>
                 <div class="image-uploader">
                   <div class="upload-area" @click="triggerFileUpload">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path
-                        d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"
-                      ></path>
-                      <polyline points="16 5 22 5 22 11"></polyline>
-                      <line x1="16" y1="5" x2="22" y2="11"></line>
-                    </svg>
+                    <i class="fas fa-images fa-3x"></i>
                     <p>Click to upload images</p>
+                    <small class="text-muted">Recommended size: 580×630px</small>
                     <input
                       type="file"
                       ref="fileInput"
@@ -347,7 +355,8 @@
                       style="display: none"
                     />
                   </div>
-                  <div class="image-previews">
+                  
+                  <div class="image-previews mt-3">
                     <div
                       v-for="(image, index) in getActiveVariant().images"
                       :key="index"
@@ -355,10 +364,10 @@
                     >
                       <img :src="image.preview" :alt="`Preview ${index + 1}`" />
                       <button
-                        class="remove-image"
+                        class="btn btn-danger btn-sm remove-image"
                         @click="removeImage(activeVariant, index)"
                       >
-                        ×
+                        <i class="fas fa-times"></i>
                       </button>
                     </div>
                   </div>
@@ -369,28 +378,15 @@
         </div>
 
         <!-- Form Actions -->
-        <div class="form-actions">
-          <button class="cancel-button" @click="goBack">Cancel</button>
-          <button class="save-button" @click="saveProduct">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
-              ></path>
-              <polyline points="17 21 17 13 7 13 7 21"></polyline>
-              <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-            Save
-          </button>
+        <div class="card-footer bg-transparent">
+          <div class="d-flex justify-content-between">
+            <button class="btn btn-outline-secondary" @click="goBack">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+            <button class="btn btn-primary" @click="saveProduct">
+              <i class="fas fa-save"></i> Save Product
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -417,8 +413,9 @@ const brands = ref([]);
 const sizes = ref([]);
 const availableColors = ref([]);
 const token = localStorage.getItem('auth_token');
+const errors = ref([])
 
-onMounted( async() => {
+onMounted(async () => {
   await fetchData();
 });
 
@@ -444,39 +441,27 @@ const fetchData = async () => {
     }
 
     const data = await response.json();
-        categories.value = data.category;
-        subCategories.value =data.subCategory;
-        brands.value = data.brands;
-        sizes.value = data.sizes;
-        availableColors.value = data.colors.map(c => ({
-          hex: c.color_code,
-          name: c.title,
-        }));
-      } catch (err) {
+    categories.value = data.category;
+    subCategories.value = data.subCategory;
+    brands.value = data.brands;
+    sizes.value = data.sizes;
+    availableColors.value = data.colors.map(c => ({
+      hex: c.color_code,
+      name: c.title,
+    }));
+  } catch (err) {
     console.error('Error fetching categories:', err);
   } finally {
     loading.value = false;
   }
 };
 
-const genders =[
-    { id: '1', slug:'men', title: 'Men' },
-    { id: '2',slug:'women', title: 'Women' },
-    { id: '3',slug:'unisex', title: 'Unisex' },
-    { id: '4',slug:'kids', title: 'Kids' },
+const genders = [
+  { id: '1', slug: 'men', title: 'Men' },
+  { id: '2', slug: 'women', title: 'Women' },
+  { id: '3', slug: 'unisex', title: 'Unisex' },
+  { id: '4', slug: 'kids', title: 'Kids' },
 ]
-// const availableColors = [
-//   { hex: "#FF0000", name: "Red" },
-//   { hex: "#00FF00", name: "Green" },
-//   { hex: "#0000FF", name: "Blue" },
-//   { hex: "#FFFF00", name: "Yellow" },
-//   { hex: "#FF00FF", name: "Magenta" },
-//   { hex: "#00FFFF", name: "Cyan" },
-//   { hex: "#000000", name: "Black" },
-//   { hex: "#FFFFFF", name: "White" },
-//   { hex: "#808080", name: "Gray" },
-//   { hex: "#FFA500", name: "Orange" },
-// ];
 
 // Editor configuration
 const editorOptions = {
@@ -531,8 +516,8 @@ const filterSubCategory = () => {
 
 // Computed property to filter subcategories based on selected category
 const filteredSubCategories = computed(() => {
-  if (!product.value.category_id) return []; 
-  const filtered = subCategories.value.filter(sub => 
+  if (!product.value.category_id) return [];
+  const filtered = subCategories.value.filter(sub =>
     sub.category_ids && sub.category_ids.includes(product.value.category_id)
   );
   return filtered;
@@ -543,17 +528,7 @@ const selectedColors = computed(() =>
   product.value.variants.map((v) => v.color)
 );
 
-// const updateCategory = (categoryId) => {
-//   const category = categories.find((c) => c.id === categoryId);
-//   product.value.category_id = category?.id || null;
-//   product.value.category_slug = category?.slug || "";
-//   product.value.subcategory_ids = [];
-//   product.value.subcategory_slugs = [];
-// };
 
-// const updateSubCategories = (selectedIds) => {
-//   product.value.subcategory_ids = selectedIds;
-// };
 
 const getColorName = (hex) => {
   return availableColors.value.find((c) => c.hex === hex)?.name || hex;
@@ -597,20 +572,51 @@ const getActiveVariant = () => {
 
 const isSizeSelected = (color, size) => {
   const variant = product.value.variants.find((v) => v.color === color);
-  return variant?.sizes.includes(size) || false;
+  if (!variant || !variant.sizes) return false;
+
+  return variant.sizes.some(s => s.id === size.id);
 };
 
+// Update toggleSize to initialize with price
 const toggleSize = (color, size) => {
+  const variant = product.value.variants.find((v) => v.color === color);
+  console.log('variant', variant);
+  if (!variant) return;
+
+  const sizeIndex = variant.sizes.findIndex(s => s.id === size.id);
+
+  if (sizeIndex === -1) {
+    // Add new size with base price
+    variant.sizes.push({
+      id: size.id,
+      size_title: size.size_title,
+      price: product.value.price // Initialize with base product price
+    });
+  } else {
+    // Remove size
+    variant.sizes.splice(sizeIndex, 1);
+  }
+};
+
+// Helper function to get size price
+const getSizePrice = (color, size) => {
+  const variant = product.value.variants.find((v) => v.color === color);
+  if (!variant) return 0;
+
+  const sizeObj = variant.sizes.find(s => s.id === size.id);
+  return sizeObj?.price || product.value.price;
+};
+
+// Update size price
+const updateSizePrice = (color, size, event) => {
   const variant = product.value.variants.find((v) => v.color === color);
   if (!variant) return;
 
-  const index = variant.sizes.indexOf(size);
-  if (index === -1) {
-    variant.sizes.push(size);
-  } else {
-    variant.sizes.splice(index, 1);
+  const sizeObj = variant.sizes.find(s => s.id === size.id);
+  if (sizeObj) {
+    sizeObj.price = parseFloat(event.target.value) || product.value.price;
   }
-};
+}
 
 const triggerFileUpload = () => {
   fileInput.value.click();
@@ -721,15 +727,15 @@ const saveProduct = () => {
   formData.append('brand', product.value.brand);
 
   // Main Image
-const mainFile = product.value.mainImage instanceof File
-  ? product.value.mainImage
-  : product.value.mainImage?.file;
+  const mainFile = product.value.mainImage instanceof File
+    ? product.value.mainImage
+    : product.value.mainImage?.file;
 
-if (mainFile instanceof File) {
-  formData.append('main_image', mainFile);
-} else {
-  console.warn("⚠️ mainImage is not a File", product.value.mainImage);
-}
+  if (mainFile instanceof File) {
+    formData.append('main_image', mainFile);
+  } else {
+    console.warn("⚠️ mainImage is not a File", product.value.mainImage);
+  }
 
 
   // Size Guide
@@ -742,25 +748,27 @@ if (mainFile instanceof File) {
     formData.append(`subcategory_ids[${index}]`, id);
   });
 
-  // Variants
+// Variants with size prices - restructure the data
   product.value.variants.forEach((variant, i) => {
     formData.append(`variants[${i}][color]`, variant.color);
     formData.append(`variants[${i}][color_name]`, getColorName(variant.color));
 
+    // Restructure sizes array to be simple IDs for validation
     variant.sizes.forEach((size, j) => {
-      formData.append(`variants[${i}][sizes][${j}]`, size.id);
+      formData.append(`variants[${i}][sizes][]`, size.id);
+      // Add prices separately
+      formData.append(`variants[${i}][size_prices][${size.id}]`, size.price);
     });
 
-variant.images.forEach((img, k) => {
-  const file = img instanceof File ? img : img.file; // if wrapped in a .file key
-  if (file instanceof File) {
-    formData.append(`variants[${i}][images][${k}]`, file);
-  } else {
-    console.warn('Skipping non-file image:', img);
-  }
-});
-
+    // Images
+    variant.images.forEach((img, k) => {
+      const file = img instanceof File ? img : img.file;
+      if (file instanceof File) {
+        formData.append(`variants[${i}][images][${k}]`, file);
+      }
+    });
   });
+
 
   // ✅ Proper FormData log
   console.log('--- FormData Contents ---');
@@ -773,8 +781,7 @@ variant.images.forEach((img, k) => {
 
 
 
-const save = async (submissionData) =>
-{
+const save = async (submissionData) => {
   try {
     const response = await fetch(`${API.BACKEND_URL}/product/add`, {
       method: 'POST',
@@ -783,7 +790,7 @@ const save = async (submissionData) =>
         'Authorization': `Bearer ${token}`,
       },
       body: submissionData,
-      
+
     })
 
     const data = await response.json()
@@ -797,9 +804,9 @@ const save = async (submissionData) =>
 
     toast.success('Category created successfully!')
     setTimeout(() => {
-    router.push("/admin/products");
+      router.push("/admin/products");
     }, 500)
-    } catch (error) {
+  } catch (error) {
     if (!errors.value.title) {
       toast.error(error.message || 'An error occurred while creating the role');
     }
@@ -816,20 +823,99 @@ const goBack = () => {
 <style scoped>
 @import "@/assets/css/custom.css";
 
-/* Color Management Styles */
-.color-management {
-  margin-top: 1rem;
+.add-product-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-.color-selection {
-  margin-bottom: 2rem;
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  margin-bottom: 30px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 30px;
+}
+
+/* Form Styles */
+.form-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.form-control {
+  border-radius: 8px;
+  padding: 10px 15px;
+}
+
+/* Upload Areas */
+.upload-area {
+  border: 2px dashed #ddd;
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+}
+
+.upload-area:hover {
+  border-color: #0d6efd;
+  background-color: #f0f7ff;
+}
+
+.upload-area.has-image,
+.upload-area.has-file {
+  padding: 20px;
+}
+
+.upload-area i {
+  color: #6c757d;
+  margin-bottom: 15px;
+}
+
+.upload-area p {
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.main-image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.file-name {
+  font-weight: 500;
+  word-break: break-all;
+}
+
+/* Color Management */
 .color-palette {
   display: flex;
-  gap: 0.5rem;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin-top: 10px;
 }
 
 .color-option {
@@ -842,172 +928,157 @@ const goBack = () => {
   justify-content: center;
   border: 2px solid transparent;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .color-option.selected {
-  border-color: #333;
-  box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+  border-color: #212529;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #212529;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
 }
 
 .checkmark {
   color: white;
+  font-size: 14px;
   text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-  font-size: 1.2rem;
 }
 
 /* Variant Tabs */
-.variant-tabs {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+.variant-tabs .nav-pills {
+  gap: 8px;
 }
 
-.variant-tab {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  cursor: pointer;
+.variant-tabs .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: white;
-  transition: all 0.2s ease;
+  padding: 8px 15px;
+  border-radius: 20px;
+  background-color: #f8f9fa;
+  color: #212529;
+  border: 1px solid #dee2e6;
 }
 
-.variant-tab.active {
-  border-color: #333;
-  background: #333;
+.variant-tabs .nav-link.active {
+  background-color: #4487ed;
   color: white;
+  border-color: #0d6efd;
 }
 
 .color-swatch {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin-right: 8px;
 }
 
-.remove-color {
-  margin-left: 0.5rem;
-  font-size: 1.2rem;
-  padding: 0 0.25rem;
+/* Close button styles */
+.btn-close {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  font-size: 12px;
+  padding: 0.5em;
+}
+
+.btn-close:hover {
+  opacity: 1;
+}
+
+.btn-close-black {
+  filter: invert(1);
+}
+
+.nav-link.active .btn-close-black {
+  filter: none;
 }
 
 /* Size Selection */
-.size-options {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
+.size-selection table {
+  margin-bottom: 0;
 }
 
-.size-option {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-  background: white;
+.size-selection th {
+  font-weight: 500;
+  background-color: #f8f9fa;
 }
 
-.size-option.selected {
-  background: #333;
-  color: white;
-  border-color: #333;
+.size-selection td {
+  vertical-align: middle;
 }
 
-/* Image Upload */
-.image-uploader,
-.file-uploader {
-  margin-top: 1rem;
-}
-
-.upload-area {
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.upload-area:hover {
-  border-color: #333;
-  background: #f8f8f8;
-}
-
-.main-image-preview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 4px;
-}
-
-.remove-main-image,
-.remove-size-guide {
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #ff4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.remove-main-image:hover,
-.remove-size-guide:hover {
-  background: #cc0000;
-}
-
+/* Image Previews */
 .image-previews {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
 }
 
 .image-preview {
   position: relative;
   aspect-ratio: 1/1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
 }
 
 .image-preview img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 4px;
 }
 
 .remove-image {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: red;
-  color: white;
-  border: none;
+  top: 5px;
+  right: 5px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   padding: 0;
+  opacity: 0.8;
+}
+
+.remove-image:hover {
+  opacity: 1;
 }
 
 /* Quill Editor Styles */
 :deep(.ql-toolbar) {
-  border-radius: 8px 8px 0 0;
-  border: 1px solid #ddd !important;
+  border-radius: 8px 8px 0 0 !important;
+  border: 1px solid #dee2e6 !important;
 }
 
 :deep(.ql-container) {
-  border-radius: 0 0 8px 8px;
-  border: 1px solid #ddd !important;
+  border-radius: 0 0 8px 8px !important;
+  border: 1px solid #dee2e6 !important;
   height: 200px;
 }
 
 :deep(.ql-editor) {
   font-size: 14px;
+  min-height: 150px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .card-body {
+    padding: 20px;
+  }
+  
+  .image-previews {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
 }
 </style>
