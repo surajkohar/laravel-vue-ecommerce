@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 use App\Libraries\SendGrid;
 use App\Mail\MyMail;
 use App\Models\Admin\EmailLogs;
+use App\Models\Admin\EmailTemplate;
 use Hashids\Hashids;
 
 
@@ -99,7 +100,7 @@ class General
 	**/
 	public static function sendTemplateEmail($to, $template, $shortCodes = [], $attachments = [], $cc = null, $bcc = null)
 	{
-		$template = EmailTemplates::getRow([
+		$template = EmailTemplate::getRow([
 				'slug LIKE ?', [$template]
 			]);
 
@@ -112,6 +113,7 @@ class General
 			]);
 			$subject = $template->subject;
 			$message = $template->description;
+
 			$subject = str_replace (
 				array_keys($shortCodes),
 				array_values($shortCodes),

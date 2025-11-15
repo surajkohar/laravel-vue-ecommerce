@@ -14,7 +14,11 @@
             <span class="remove-tag" @click.stop="removeOption(option)">×</span>
           </span>
         </div>
-        <span class="arrow">▼</span>
+        <span class="arrow">
+                  <svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.4a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+</svg>
+        </span>
       </div>
       <div class="select-options" v-show="isOpen">
         <input

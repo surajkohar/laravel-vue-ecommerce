@@ -49,8 +49,8 @@ class ProductsController extends ApiController
             if ($request->get('search')) {
                 $search = '%' . $request->get('search') . '%';
                 $where[] = [
-                    '(products.id LIKE ? OR products.name LIKE ? OR products.sku LIKE ?)',
-                    [$search, $search, $search]
+                    '(products.id LIKE ? OR products.name LIKE ? OR products.sku LIKE ? OR b.title LIKE ?)',
+                    [$search, $search, $search, $search]
                 ];
             }
 
@@ -147,6 +147,8 @@ class ProductsController extends ApiController
                             return [
                                 'id' => $size->id,
                                 'size_title' => $size->size_title,
+                                'price' => $size->pivot->price
+
                             ];
                         }),
                         'images' => $variant->images->map(function ($image) {

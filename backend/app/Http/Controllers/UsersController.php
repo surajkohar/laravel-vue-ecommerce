@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Libraries\General;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -10,9 +11,12 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ResetPasswordMail;
+use App\Mail\WelcomeEmail;
+use App\Models\Admin\EmailTemplate;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 class UsersController extends ApiController
@@ -71,53 +75,112 @@ class UsersController extends ApiController
 
     public function create(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|numeric|digits_between:10,15', // better validation for phone number
-            'status' => 'required|boolean', // status required
-            'roleid' => 'nullable|exists:roles,id', // check if role exists
+            'phone' => 'required|numeric|digits_between:10,15',
+            'status' => 'required|boolean',
+            'roleid' => 'nullable|exists:roles,id',
+            'password' => 'nullable|string|min:8',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'send_welcome_email' => 'nullable',
+            'welcome_message' => 'nullable|string',
         ]);
 
+        // Log::info($request->all());
         if ($validator->fails()) {
             return $this->respondWithError('Validation failed', 422, $validator->errors());
         }
 
         try {
+            // Handle profile image upload
+            $profileImagePath = null;
+            if ($request->hasFile('profile_image')) {
+                $profileImagePath = $request->file('profile_image')->store('profile_images', 'public');
+            }
+
+            // Generate password if not provided
+            $password = $request->password ?? Str::random(12);
+
+            // Create user
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'status' => $request->status,
+                'password' => bcrypt($password),
+                'profile_image' => $profileImagePath,
             ]);
 
-            // Assign role if roleid is provided
+            // Assign role if provided
             if ($request->roleid) {
-                $role = Role::findById($request->roleid, 'web'); // fix here
-                $user->assignRole($role->name); // fix here
+                $role = Role::where('id', $request->roleid)
+                    ->where('guard_name', 'web')
+                    ->firstOrFail();
+                $user->assignRole($role->name);
             }
 
-            return $this->respondWithSuccess('User registered successfully!', $user, 201);
+            // Send welcome email if requested
+            if ($request->input('send_welcome_email')) {
+                $this->sendWelcomeEmailUsingTemplate($user, $password, $request->welcome_message);
+            }
+
+            return $this->respondWithSuccess('User created successfully!', [
+                'user' => $user,
+                'generated_password' => $request->password ? null : $password,
+            ], 201);
         } catch (\Exception $e) {
             Log::error('User creation failed: ' . $e->getMessage());
-            return $this->respondWithError('Failed to register user. Please try again later.', 500);
+            return $this->respondWithError('Failed to create user. Please try again later.', 500);
         }
+    }
+
+
+    protected function uploadProfileImage($file)
+    {
+        $filename = 'profile_' . time() . '.' . $file->getClientOriginalExtension();
+        // Only save relative path (no 'public/' prefix)
+        $file->storeAs('public/profile_images', $filename);
+        return 'profile_images/' . $filename; // <-- Save this in DB
+    }
+
+    protected function respondWithSuccess($message, $data = [], $status = 200)
+    {
+        return response()->json([
+            'status' => true,
+            'message' => $message,
+            'data' => $data
+        ], $status);
+    }
+
+    protected function respondWithError($message, $status = 400, $errors = [])
+    {
+        return response()->json([
+            'status' => false,
+            'message' => $message,
+            'errors' => $errors
+        ], $status);
     }
 
     public function edit($id)
     {
         try {
-            $user = User::with('roles')->findOrFail($id); // load user with roles relationship
+            $user = User::with('roles')->findOrFail($id);
 
-            return $this->respondWithSuccess('User fetched successfully', [
+            $data = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'status' => $user->status,
-                'role_id' => $user->roles->first()?->id, // if user has a role, return its id, else null
-            ]);
+                'role_id' => $user->roles->first()?->id,
+                'profile_image' => $user->profile_image
+                    ? (str_starts_with($user->profile_image, 'storage/')
+                        ? asset($user->profile_image)
+                        : asset('storage/' . $user->profile_image))
+                    : null,
+            ];
+            return $this->respondWithSuccess('User fetched successfully', $data);
         } catch (\Exception $e) {
             return $this->respondWithError('Failed to fetch user data.', 500);
         }
@@ -131,8 +194,12 @@ class UsersController extends ApiController
             'phone' => 'required|numeric|digits_between:10,15',
             'status' => 'required|boolean',
             'roleid' => 'nullable|exists:roles,id',
+            'password' => 'nullable|string|min:8',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'remove_profile_image' => 'nullable|boolean',
+            'send_update_email' => 'nullable',
+            'update_message' => 'nullable|string',
         ]);
-        Log::info('Request data:', $request->all());
 
         if ($validator->fails()) {
             return $this->respondWithError('Validation failed', 422, $validator->errors());
@@ -141,6 +208,7 @@ class UsersController extends ApiController
         try {
             $user = User::findOrFail($id);
 
+            // Update basic info
             $user->update([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -148,17 +216,102 @@ class UsersController extends ApiController
                 'status' => $request->status,
             ]);
 
-            // Update Role
-            if ($request->roleid) {
-                $role = Role::findById($request->roleid, 'web');
-                $user->syncRoles([$role->name]);
-            } else {
-                $user->syncRoles([]); // remove all roles if roleid is null
+            // Update password if provided
+            if ($request->password) {
+                $user->password = bcrypt($request->password);
+                $user->save();
+            }
+            // Log::info($request->all());
+            // Handle profile image
+            if ($request->hasFile('profile_image')) {
+                // Delete old image if exists
+                if ($user->profile_image) {
+                    Storage::delete($user->profile_image);
+                }
+
+                // Store new image
+                $path = $request->file('profile_image')->store('profile_images', 'public');
+                $user->profile_image = $path;
+                $user->save();
+            } elseif ($request->remove_profile_image) {
+                // Remove existing profile image
+                if ($user->profile_image) {
+                    Storage::delete($user->profile_image);
+                }
+                $user->profile_image = null;
+                $user->save();
             }
 
-            return $this->respondWithSuccess('User updated successfully!', $user);
+            // Update Role
+            if ($request->roleid) {
+                $role = Role::where('id', $request->roleid)
+                    ->where('guard_name', 'web')
+                    ->firstOrFail();
+                $user->syncRoles([$role->name]);
+            } else {
+                $user->syncRoles([]);
+            }
+
+            // Send update email if requested and password was changed
+            if ($request->send_update_email && $request->password) {
+                $this->sendUpdateEmailUsingTemplate($user, $request->password, $request->update_message);
+            }
+
+            return $this->respondWithSuccess('User updated successfully!', [
+                'user' => $user,
+                'profile_image_url' => $user->profile_image
+                    ? asset('storage/' . str_replace('public/', '', $user->profile_image))
+                    : null,
+            ]);
         } catch (\Exception $e) {
+            Log::error('User update failed: ' . $e->getMessage());
             return $this->respondWithError('Failed to update user. Please try again later.', 500);
+        }
+    }
+
+    protected function sendWelcomeEmailUsingTemplate($user, $password, $customMessage = null)
+    {
+        try {
+            $shortCodes = [
+                '{first_name}' => $user->name,
+                '{last_name}' => '', // Add if you have last name
+                '{email}' => $user->email,
+                '{password}' => $password,
+                '{admin_link}' => url('/admin'),
+                '{company_name}' => config('app.name'),
+                '{custom_message}' => $customMessage ?? ''
+            ];
+
+            General::sendTemplateEmail(
+                $user->email,
+                'admin-registration', // Using your existing template
+                $shortCodes
+            );
+        } catch (\Exception $e) {
+            Log::error('Welcome email failed to send: ' . $e->getMessage());
+        }
+    }
+
+    protected function sendUpdateEmailUsingTemplate($user, $newPassword, $customMessage = null)
+    {
+        try {
+            $shortCodes = [
+                '{first_name}' => $user->name,
+                '{last_name}' => '', // Add if you have last name
+                '{email}' => $user->email,
+                '{new_password}' => $newPassword,
+                '{admin_link}' => url('/admin'),
+                '{company_name}' => config('app.name'),
+                '{custom_message}' => $customMessage ?? ''
+            ];
+
+            General::sendTemplateEmail(
+                $user->email,
+                'admin-credentials-update', // Using the new template
+                $shortCodes
+            );
+        } catch (\Exception $e) {
+            Log::error('Update email failed to send: ' . $e->getMessage());
         }
     }
 }

@@ -22,7 +22,7 @@
           <div class="card details-card">
             <div class="card-body">
               <h2 class="product-title">{{ product.name }}</h2>
-              
+
               <div class="product-meta">
                 <span class="badge status-badge" :class="product.status ? 'active' : 'inactive'">
                   {{ product.status ? 'Active' : 'Inactive' }}
@@ -82,18 +82,19 @@
                       <div class="color-display" :style="{ backgroundColor: variant.color }"></div>
                       <span class="color-name">{{ variant.color_name }}</span>
                     </div>
-                    
+
                     <div class="variant-sizes">
                       <span class="sizes-label">Available Sizes:</span>
                       <div class="size-tags">
                         <span v-for="size in variant.sizes" :key="size.id" class="size-tag">
-                          {{ size.size_title }}
+                          {{ size.size_title }} - £{{ size.price }}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -133,25 +134,25 @@
                     <div class="color-indicator" :style="{ backgroundColor: variant.color }"></div>
                     {{ variant.color_name }}
                   </div>
-                  
+
                   <div class="variant-images" v-if="variant.images.length">
                     <div class="image-carousel">
-                      <button class="nav-button prev" @click="prevImage(variant.id)" 
+                      <button class="nav-button prev" @click="prevImage(variant.id)"
                         :disabled="currentImageIndex[variant.id] === 0">
                         <i class="fas fa-chevron-left"></i>
                       </button>
-                      
+
                       <div class="image-container">
-                        <img :src="variant.images[currentImageIndex[variant.id]]?.url" 
+                        <img :src="variant.images[currentImageIndex[variant.id]]?.url"
                           :alt="`${variant.color_name} image`" />
                       </div>
-                      
+
                       <button class="nav-button next" @click="nextImage(variant.id)"
                         :disabled="currentImageIndex[variant.id] === variant.images.length - 1">
                         <i class="fas fa-chevron-right"></i>
                       </button>
                     </div>
-                    
+
                     <div class="image-counter">
                       {{ currentImageIndex[variant.id] + 1 }} of {{ variant.images.length }}
                     </div>
@@ -667,6 +668,25 @@ onMounted(() => {
 
 .loading-container p {
   color: #6c757d;
+}
+
+.size-tag {
+  background-color: #f8f9fa;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid #e9ecef;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.size-tag::after {
+  content: attr(data-price);
+  font-size: 11px;
+  color: #10b759;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {

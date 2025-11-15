@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     require_once __DIR__ . '/productSubCategory.php';
     require_once __DIR__ . '/sizes.php';
     require_once __DIR__ . '/brands.php';
+    require_once __DIR__ . '/emails.php';
 
 
 

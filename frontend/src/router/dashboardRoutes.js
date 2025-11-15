@@ -1,4 +1,6 @@
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import EmailTemplates from '@/pages/emails/EmailTemplatesList.vue'
+import EmailTemplateAdd from '@/pages/emails/EmailTemplateAdd.vue'
 
 const dashboardRoutes = [
   {
@@ -141,6 +143,23 @@ const dashboardRoutes = [
         component: () => import('@/pages/dashboard/productSubCategory/edit.vue'),  
         // meta: { permission: 'edit user' }
       },
+      {
+        path: 'email-templates',
+        name: 'EmailTemplates',
+        component: EmailTemplates,
+        // meta: { requiresAuth: true, permission: 'manage_email_templates' }
+      },
+      {
+    path: '/admin/email-template/add',
+    name: 'EmailTemplateAdd',
+    component: EmailTemplateAdd
+  },
+  {
+    path: '/admin/email-template/:id/edit',
+    name: 'EmailTemplateEdit',
+    component: EmailTemplateAdd, // Same component as add
+    props: true
+  }
     ]
   }
 ]

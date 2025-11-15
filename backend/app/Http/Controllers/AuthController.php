@@ -42,10 +42,9 @@ class AuthController extends ApiController
                 'password' => Hash::make($request->password),
             ]);
 
+
             return $this->respondWithSuccess('User registered successfully!', $user, 201);
         } catch (\Exception $e) {
-        dd($e);
-
             return $this->respondWithError('Failed to register user. Please try again later.', 500);
         }
     }
@@ -75,6 +74,7 @@ class AuthController extends ApiController
             $token = $user->createToken('auth_token')->plainTextToken;
             $permissions = $user->getAllPermissions()->pluck('name')->toArray();
 
+            $user->profile_image =$user->profile_image ? asset('storage/' . $user->profile_image) : null;
             return $this->respondWithSuccess('Login successful', [
                 'token' => $token,
                 'user' => $user,

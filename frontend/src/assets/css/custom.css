@@ -378,12 +378,12 @@ font-size: 14px;
     align-items: center;
     justify-content: center;
     padding: 30px;
-    color: #007BFF;
+    color: #4CAF50;
   }
   
   .spinner {
     border: 3px solid rgba(0, 123, 255, 0.2);
-    border-top: 3px solid #007BFF;
+    border-top: 3px solid #4CAF50;
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -839,4 +839,163 @@ font-size: 14px;
 .bulk-delete-button:hover {
   background-color: #f9f9f9;
   text-decoration: none;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  position: relative;
+  padding-left: 10px;
+  user-select: none;
+}
+
+/* Hide default radio */
+.radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Custom radio */
+.radio-option .radio-custom {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 18px;
+  width: 18px;
+  background-color: white;
+  border: 2px solid #ced4da;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+/* Hover state */
+.radio-option:hover input ~ .radio-custom {
+  border-color: #adb5bd;
+}
+
+/* Checked state */
+.radio-option input:checked ~ .radio-custom {
+  background-color: #10b759;
+  border-color: #10b759;
+  box-shadow: 0 0 0 3px rgba(16, 183, 89, 0.2);
+}
+
+/* Inner dot */
+.radio-option .radio-custom:after {
+  content: "";
+  position: absolute;
+  display: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+/* Show dot when checked */
+.radio-option input:checked ~ .radio-custom:after {
+  display: block;
+}
+
+/* Focus state */
+.radio-option input:focus ~ .radio-custom {
+  box-shadow: 0 0 0 3px rgba(16, 183, 89, 0.3);
+}
+
+/* Label styling */
+.radio-label {
+  font-size: 14px;
+  color: #495057;
+  transition: color 0.2s;
+}
+
+.radio-option:hover .radio-label {
+  color: #343a40;
+}
+
+/* Disabled state */
+.radio-option input:disabled ~ .radio-custom {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+}
+
+.radio-option input:disabled ~ .radio-label {
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+/* Status Toggle */
+.status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #10b759;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #10b759;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.toggle-label {
+  font-size: 14px;
+  color: #495057;
 }

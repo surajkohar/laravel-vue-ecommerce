@@ -404,13 +404,14 @@
         </div>
       </div>
     </div>
-    <div v-else class="loading-container">
-      <div class="spinner-border text-primary" role="status">
+    <div v-else class="loading">
+      <div class="spinner" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
       <p class="mt-2">Loading product data...</p>
     </div>
   </div>
+
 </template>
 
 <script setup>

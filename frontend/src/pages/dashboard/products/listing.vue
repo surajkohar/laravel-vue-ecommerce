@@ -4,7 +4,8 @@
       <h1>Products</h1>
       <div class="action-buttons">
         <button class="add-button" @click="router.push('/admin/product/add')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
@@ -12,7 +13,8 @@
         </button>
         <div class="custom-dropdown">
           <button class="filter-button" @click="toggleDropdown">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
             </svg>
             Filters
@@ -20,42 +22,42 @@
           <div class="custom-dropdown-menu" v-show="showDropdown">
             <div class="dropdown-content">
               <button class="close-dropdown" @click="toggleDropdown">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
               <div class="filter-group">
-  <label>Status</label>
-  <div class="d-flex align-items-center gap-3 mt-1">
-    <div class="form-check">
-      <input type="radio" id="status-all" value="" v-model="filters.status" class="form-check-input" />
-      <label for="status-all" class="form-check-label">All</label>
-    </div>
-    <div class="form-check">
-      <input type="radio" id="status-active" value="active" v-model="filters.status" class="form-check-input" />
-      <label for="status-active" class="form-check-label">Active</label>
-    </div>
-    <div class="form-check">
-      <input type="radio" id="status-inactive" value="inactive" v-model="filters.status" class="form-check-input" />
-      <label for="status-inactive" class="form-check-label">Inactive</label>
-    </div>
-  </div>
+                <label>Status</label>
+                <div class="password-options d-flex"> <!-- Reusing the same class -->
+  <label class="radio-option">
+    <input type="radio" id="status-all" value="" v-model="filters.status" />
+    <span class="radio-custom"></span>
+    <span class="radio-label">All</span>
+  </label>
+  <label class="radio-option">
+    <input type="radio" id="status-active" value="active" v-model="filters.status" />
+    <span class="radio-custom"></span>
+    <span class="radio-label">Active</span>
+  </label>
+  <label class="radio-option">
+    <input type="radio" id="status-inactive" value="inactive" v-model="filters.status" />
+    <span class="radio-custom"></span>
+    <span class="radio-label">Inactive</span>
+  </label>
 </div>
+
+              </div>
               <div class="filter-group">
                 <label>Category</label>
-                 <MultiSelect v-model="filters.category" :options="categories"
-                placeholder="Select category" option-label="title" option-value="id" />
+                <MultiSelect v-model="filters.category" :options="categories" placeholder="Select category"
+                  option-label="title" option-value="id" />
               </div>
               <div class="filter-group">
                 <label>Brand</label>
-                <Select
-                v-model="filters.brand"
-                placeholder="Select Brand"
-                :options="brands"
-                option-label="title"
-                option-value="id"
-              />
+                <Select v-model="filters.brand" placeholder="Select Brand" :options="brands" option-label="title"
+                  option-value="id" />
               </div>
               <div class="filter-group">
                 <label>Created From</label>
@@ -74,29 +76,30 @@
         </div>
       </div>
     </div>
-    
+
     <div class="d-flex justify-content-between align-items-center mb-2">
       <div>
         <h6>Manage products</h6>
       </div>
       <div class="search-container">
-        <input type="text" v-model="filters.search" @input="fetchProducts" placeholder="Search products..." class="search-input">
+        <input type="text" v-model="filters.search" @input="fetchProducts" placeholder="Search products..."
+          class="search-input">
         <!-- Bulk actions dropdown trigger -->
         <div class="bulk-actions-container" v-if="selectedIds.length > 0">
           <button class="bulk-actions-button" @click="toggleBulkActions">
-              <i class="fas fa-ellipsis-v"></i>
+            <i class="fas fa-ellipsis-v"></i>
           </button>
           <div class="bulk-actions-dropdown" ref="dropdownContainer" v-show="showBulkActions">
             <button class="bulk-delete-button" @click="confirmBulkDelete">
-                <i class="fas fa-trash text-danger"></i>
+              <i class="fas fa-trash text-danger"></i>
               Delete Selected
             </button>
             <button class="bulk-status-button" @click="confirmBulkStatusChange('active')">
-                <i class="fas fa-check-circle text-success"></i>
+              <i class="fas fa-check-circle text-success"></i>
               Activate Selected
             </button>
             <button class="bulk-status-button" @click="confirmBulkStatusChange('inactive')">
-                <i class="fas fa-times-circle text-warning"></i>
+              <i class="fas fa-times-circle text-warning"></i>
               Deactivate Selected
             </button>
           </div>
@@ -110,9 +113,7 @@
         <thead>
           <tr>
             <th>
-              <input type="checkbox" 
-                     :checked="allSelected" 
-                     @change="toggleSelectAll">
+              <input type="checkbox" :checked="allSelected" @change="toggleSelectAll">
             </th>
             <th @click="sortBy('id')">
               ID
@@ -142,7 +143,7 @@
               </span>
             </th>
             <th @click="sortBy('brand_title')">
-              Brand 
+              Brand
               <span class="sort-icon">
                 <template v-if="filters.sort_field === 'brand_title'">
                   {{ filters.sort_direction === 'asc' ? '↑' : '↓' }}
@@ -184,9 +185,7 @@
         <tbody>
           <tr v-for="product in products.data" :key="product.id">
             <td>
-              <input type="checkbox" 
-                     :checked="selectedIds.includes(product.id)" 
-                     @change="toggleSelect(product.id)">
+              <input type="checkbox" :checked="selectedIds.includes(product.id)" @change="toggleSelect(product.id)">
             </td>
             <td>{{ product.id }}</td>
             <td>{{ product.name }}</td>
@@ -202,19 +201,22 @@
             </td>
             <td class="actions-cell">
               <button class="view-button" @click="viewProduct(product.id)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
               </button>
               <button class="edit-button" @click="editProduct(product.id)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
               </button>
               <button class="delete-button" @click="confirmDelete(product.id)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
@@ -232,9 +234,8 @@
     <!-- Pagination -->
     <div class="pagination" v-if="products.meta && products.meta.last_page > 1">
       <button @click="prevPage" :disabled="products.meta.current_page === 1">Previous</button>
-      <span v-for="page in visiblePages" :key="page" 
-            @click="goToPage(page)" 
-            :class="{ active: products.meta.current_page === page }">
+      <span v-for="page in visiblePages" :key="page" @click="goToPage(page)"
+        :class="{ active: products.meta.current_page === page }">
         {{ page }}
       </span>
       <button @click="nextPage" :disabled="products.meta.current_page === products.meta.last_page">Next</button>
@@ -242,7 +243,8 @@
 
     <!-- Empty State -->
     <div v-if="!loading && (!products.data || products.data.length === 0)" class="empty-state">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
       </svg>
@@ -322,7 +324,7 @@ const fetchProducts = async () => {
     const { data: pageData, ...meta } = data.page;
     products.value.data = pageData;
     products.value.meta = meta;
-    
+
   } catch (err) {
     console.error('Error fetching products:', err);
     toast.error(err.message || 'Failed to fetch products');
@@ -449,7 +451,7 @@ const deleteProduct = async (id) => {
         'Authorization': `Bearer ${token}`,
       }
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to delete product');
@@ -498,7 +500,7 @@ const confirmBulkDelete = async () => {
     title: 'Delete Selected Products',
     message: `Are you sure you want to delete ${selectedIds.value.length} products? This cannot be undone!`
   });
-  
+
   if (confirmed) {
     await bulkDeleteProducts();
   }
@@ -510,7 +512,7 @@ const confirmBulkStatusChange = async (status) => {
     title: `${action.charAt(0).toUpperCase() + action.slice(1)} Selected Products`,
     message: `Are you sure you want to ${action} ${selectedIds.value.length} products?`
   });
-  
+
   if (confirmed) {
     await bulkUpdateProductStatus(status === 'active');
   }
@@ -528,12 +530,12 @@ const bulkDeleteProducts = async () => {
       },
       body: JSON.stringify({ ids: selectedIds.value })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to delete products');
     }
-    
+
     toast.success(`${selectedIds.value.length} products deleted successfully!`);
     selectedIds.value = [];
     showBulkActions.value = false;
@@ -556,17 +558,17 @@ const bulkUpdateProductStatus = async (status) => {
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         ids: selectedIds.value,
-        status: status 
+        status: status
       })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to update products status');
     }
-    
+
     const action = status ? 'activated' : 'deactivated';
     toast.success(`${selectedIds.value.length} products ${action} successfully!`);
     selectedIds.value = [];
