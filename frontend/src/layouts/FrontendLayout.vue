@@ -1,10 +1,5 @@
-<script setup>
-import Navbar from "@/components/frontend/Navbar.vue";
-import Footer from "@/components/frontend/Footer.vue";
-</script>
-
 <template>
-  <div class="layout-wrapper">
+  <div class="frontend-layout">
     <Navbar />
     <main class="main-content">
       <slot />
@@ -13,4 +8,22 @@ import Footer from "@/components/frontend/Footer.vue";
   </div>
 </template>
 
-<style scoped src="@/assets/styles/layouts/frontendLayout.css"></style>
+<script setup>
+import Navbar from '@/components/frontend/Navbar.vue'
+import Footer from '@/components/frontend/Footer.vue'
+</script>
+<style scoped src="@/assets/styles/main.css"></style>
+<style scoped src="@/assets/styles/animations.css"></style>
+
+<style scoped>
+.frontend-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 70px; /* Account for fixed navbar */
+}
+</style>

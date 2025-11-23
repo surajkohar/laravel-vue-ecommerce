@@ -156,22 +156,6 @@
           
           <div class="form-grid">
             <div class="form-group">
-              <label>Current Password</label>
-              <div class="input-wrapper">
-                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <input 
-                  v-model="passwordForm.currentPassword" 
-                  type="password" 
-                  placeholder="Enter current password"
-                  class="input-with-icon"
-                >
-              </div>
-            </div>
-            
-            <div class="form-group">
               <label>New Password</label>
               <div class="input-wrapper">
                 <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -267,49 +251,54 @@ const triggerFileInput = () => {
   fileInput.value?.click()
 }
 
+const uploadedFile = ref(null);
+
 const handleImageUpload = (event) => {
-  const file = event.target.files[0]
+  const file = event.target.files[0];
+
   if (file) {
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image size should be less than 2MB')
-      return
+      alert("Image must be less than 2MB");
+      return;
     }
-    
-    const reader = new FileReader()
+
+    uploadedFile.value = file; // <-- store file
+
+    const reader = new FileReader();
     reader.onload = (e) => {
-      imagePreview.value = e.target.result
-    }
-    reader.readAsDataURL(file)
+      imagePreview.value = e.target.result; // show preview
+    };
+    reader.readAsDataURL(file);
   }
 }
 
 const saveChanges = async () => {
   if (passwordForm.newPassword && passwordForm.newPassword !== passwordForm.confirmPassword) {
-    alert('Passwords do not match')
-    return
+    alert('Passwords do not match');
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
+
   try {
     const updatedData = {
       ...form,
       ...(passwordForm.newPassword && {
-        password: passwordForm.newPassword,
-        currentPassword: passwordForm.currentPassword
+        password: passwordForm.newPassword
       }),
-      ...(imagePreview.value && { avatar: imagePreview.value })
-    }
+      ...(uploadedFile.value && { profile_image: uploadedFile.value }) // MUST be File
+    };
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    emit('update', updatedData)
-    emit('close')
+    emit("update", updatedData);
+    emit("close");
+
   } catch (error) {
-    console.error('Failed to update profile:', error)
+    console.error("Failed to update profile:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
+
 </script>
 
 <style scoped>

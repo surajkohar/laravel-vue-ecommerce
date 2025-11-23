@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UsersController::class, 'index']);
     Route::get('/user/{id}/edit', [UsersController::class, 'edit']);
     Route::put('/user/{id}/update', [UsersController::class, 'update']);
+    Route::post('/pro', [UsersController::class, 'updateProfile']);
 
     require_once __DIR__ . '/product.php';
     require_once __DIR__ . '/productCategory.php';
@@ -52,3 +53,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 });
+
+Route::get('/homepage/fetch-products', [ProductsController::class, 'fetchProducts']);
+

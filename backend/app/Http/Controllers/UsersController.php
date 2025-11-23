@@ -314,4 +314,72 @@ class UsersController extends ApiController
             Log::error('Update email failed to send: ' . $e->getMessage());
         }
     }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user(); // Logged-in user
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'required|numeric|digits_between:7,15',
+            'password' => 'nullable|string|min:8',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'remove_profile_image' => 'nullable|boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Update basic fields
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->phone = $request->phone;
+
+            // Update password if provided
+            if ($request->password) {
+                $user->password = bcrypt($request->password);
+            }
+
+            // Handle profile image
+            if ($request->hasFile('profile_image')) {
+                // Delete old
+                if ($user->profile_image) {
+                    Storage::disk('public')->delete($user->profile_image);
+                }
+
+                // Save new
+                $path = $request->file('profile_image')->store('profile_images', 'public');
+                $user->profile_image = $path;
+            }
+
+            // Remove profile image
+            if ($request->remove_profile_image) {
+                if ($user->profile_image) {
+                    Storage::disk('public')->delete($user->profile_image);
+                }
+                $user->profile_image = null;
+            }
+
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile updated successfully',
+                'user' => $user,
+                'profile_image_url' => $user->profile_image
+                    ? asset('storage/' . $user->profile_image)
+                    : null
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update profile',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

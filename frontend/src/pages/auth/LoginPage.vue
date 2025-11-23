@@ -1,3 +1,13 @@
+
+<template>
+    <div>
+        <h2>Login</h2>
+        <input v-model="email" placeholder="Email" />
+        <input v-model="password" type="password" placeholder="Password" />
+        <button @click="login">Login</button>
+    </div>
+</template>
+
 <script setup>
 import { ref } from "vue";
 import { useAuthStore } from "@/store/auth";
@@ -13,12 +23,3 @@ async function login() {
     router.push("/");
 }
 </script>
-
-<template>
-    <div>
-        <h2>Login</h2>
-        <input v-model="email" placeholder="Email" />
-        <input v-model="password" type="password" placeholder="Password" />
-        <button @click="login">Login</button>
-    </div>
-</template>

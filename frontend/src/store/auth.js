@@ -39,6 +39,14 @@ export const useAuthStore = defineStore('auth', {
       this.clearStorage()
       this._hydrated = true
     },
+
+    updateProfile(payload) {
+      this.user = payload.user;
+      localStorage.setItem('auth_user', JSON.stringify(payload.user));
+      this.isAdmin = payload.user?.is_admin === 1;
+      this._hydrated = true;
+    },
+
     persist() {
       localStorage.setItem('auth_token', this.token)
       localStorage.setItem('auth_user', JSON.stringify(this.user))

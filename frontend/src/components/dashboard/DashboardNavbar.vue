@@ -97,6 +97,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'vue-router'
 import ProfileSettingsModal from '@/components/ProfileSettingsModal.vue'
+import { API } from "@/utils/config";
+import { toast } from "vue3-toastify";
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -104,19 +106,35 @@ const router = useRouter()
 const showUserMenu = ref(false)
 const showNotifications = ref(false)
 const showProfileModal = ref(false)
+const errors = ref({})
+const token = localStorage.getItem("auth_token");
+
 const notifications = ref([
   { id: 1, message: 'New user registered', time: '2 min ago', read: false },
   { id: 2, message: 'Order #1234 has been placed', time: '5 min ago', read: true },
   { id: 3, message: 'System update completed', time: '1 hour ago', read: true }
 ])
 
-const userProfile = computed(() => ({
-  name: authStore.user?.name || 'Admin User',
-  email: authStore.user?.email || 'admin@example.com',
-  phone: authStore.user?.phone || '+1 (555) 123-4567',
-  role: authStore.user?.role || 'Administrator',
-  avatar: authStore.user?.profile_image || '/default-avatar.png'
-}))
+const userProfile = computed(() => {
+  const user = authStore.user;
+
+  const profileImage = user?.profile_image
+    ? (user.profile_image.startsWith("http")
+        ? user.profile_image
+        : `${API.BACKEND_URL.replace('/api', '')}/storage/${user.profile_image}`
+      )
+    : "/default-avatar.png";
+
+  return {
+    name: user?.name || "Admin User",
+    email: user?.email || "admin@example.com",
+    phone: user?.phone || "+1 (555) 123-4567",
+    role: user?.role || "Administrator",
+    avatar: profileImage
+  };
+});
+
+
 
 const unreadCount = computed(() => 
   notifications.value.filter(n => !n.read).length
@@ -146,11 +164,56 @@ const logout = () => {
   router.push('/login')
 }
 
-const handleProfileUpdate = (updatedData) => {
-  console.log('Profile updated:', updatedData)
-  // Update user data in store/local storage
-  showProfileModal.value = false
+const handleProfileUpdate = async (updatedData) => {
+  errors.value = {};
+
+  try {
+    const formData = new FormData();
+
+    Object.keys(updatedData).forEach((key) => {
+      if (updatedData[key] !== null && updatedData[key] !== undefined) {
+
+        if (key === "profile_image" && updatedData[key] instanceof File) {
+          formData.append("profile_image", updatedData[key]);
+        } else {
+          formData.append(key, updatedData[key]);
+        }
+
+      }
+    });
+
+    const response = await fetch(`${API.BACKEND_URL}/profile/update`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 422) errors.value = data.errors || {};
+      throw new Error(data.message || "Failed to update profile");
+    }
+
+    authStore.updateProfile({ user: data.user });
+
+    toast.success("Profile updated successfully!");
+
+    userProfile.value = {
+      ...userProfile.value,
+      ...updatedData,
+      profile_image: data.profile_image_url
+    };
+    showProfileModal.value = false;
+
+  } catch (error) {
+    toast.error(error.message);
+  }
 }
+
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {

@@ -621,4 +621,91 @@ class ProductsController extends ApiController
             'colors' => $colors ?? ''
         ]);
     }
+
+    // In your Controller
+public function fetchProducts(Request $request)
+{
+    try {
+        $query = Products::with(['category', 'variants.images'])
+            ->where('status', 'active');
+
+        // Search filter
+        if ($request->has('search') && $request->search) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Category filter
+        if ($request->has('category') && $request->category) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Brand filter
+        if ($request->has('brand') && $request->brand) {
+            $query->where('brands_slug', $request->brand);
+        }
+
+        // Gender filter
+        if ($request->has('gender') && $request->gender) {
+            $query->where('gender', $request->gender);
+        }
+
+        // Price range filter
+        if ($request->has('min_price') && $request->min_price) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->has('max_price') && $request->max_price) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        $allowedSort = ['name', 'price', 'created_at', 'stock'];
+        if (in_array($sortBy, $allowedSort)) {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        $products = $query->paginate(12);
+
+        $formattedProducts = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'price' => $product->price,
+                'purchase_price' => $product->purchase_price,
+                'sku' => $product->sku,
+                'stock' => $product->stock,
+                'gender' => $product->gender,
+                'status' => $product->status,
+                'brand' => $product->brands_slug,
+                'category' => $product->category->name ?? '',
+                'main_image_url' => $product->main_image_name ?
+                    asset('storage/' . $product->main_image_name) :
+                    ($product->variants->first()->images->first()->image_name ??
+                     asset('images/default-product.jpg')),
+                'variants_count' => $product->variants->count(),
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'data' => $formattedProducts,
+            'meta' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Failed to fetch products',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }
