@@ -67,7 +67,7 @@
               <div class="empty-icon">📦</div>
               <h3>No products found</h3>
               <p>Try adjusting your search or filters</p>
-              <button class="reset-btn" @click="resetAllFilters">Reset Filters</button>
+              <button class="btn btn-primary" @click="resetAllFilters">Reset Filters</button>
             </div>
 
             <!-- Pagination -->
@@ -182,15 +182,17 @@ onMounted(() => {
 })
 </script>
 
+<style scoped src="@/assets/styles/frontend.css"></style>
+
 <style scoped>
 .products-page {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: var(--gray-light);
 }
 
 .page-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--primary-red) 0%, #764ba2 100%);
+  color: var(--primary-white);
   padding: 3rem 0;
   text-align: center;
 }
@@ -205,12 +207,6 @@ onMounted(() => {
   opacity: 0.9;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
 .products-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -223,19 +219,19 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  background: white;
+  background: var(--primary-white);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-light);
 }
 
 .results-info h2 {
   margin: 0 0 0.5rem 0;
-  color: #333;
+  color: var(--primary-black);
 }
 
 .results-count {
-  color: #6c757d;
+  color: var(--gray-medium);
   margin: 0;
 }
 
@@ -246,18 +242,19 @@ onMounted(() => {
 
 .view-btn {
   padding: 8px 16px;
-  border: 1px solid #ddd;
-  background: white;
-  color: #666;
+  border: 1px solid var(--border-color);
+  background: var(--primary-white);
+  color: var(--gray-medium);
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
 }
 
 .view-btn.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+  background: var(--primary-red);
+  color: var(--primary-white);
+  border-color: var(--primary-red);
 }
 
 .products-container.grid {
@@ -288,12 +285,12 @@ onMounted(() => {
 .loading-state {
   text-align: center;
   padding: 3rem;
-  color: #667eea;
+  color: var(--primary-red);
 }
 
 .spinner {
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #667eea;
+  border-top: 3px solid var(--primary-red);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -309,9 +306,9 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: white;
+  background: var(--primary-white);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-light);
 }
 
 .empty-icon {
@@ -320,27 +317,13 @@ onMounted(() => {
 }
 
 .empty-state h3 {
-  color: #495057;
+  color: var(--gray-dark);
   margin-bottom: 0.5rem;
 }
 
 .empty-state p {
-  color: #6c757d;
+  color: var(--gray-medium);
   margin-bottom: 1.5rem;
-}
-
-.reset-btn {
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.reset-btn:hover {
-  background: #5a6fd8;
 }
 
 .pagination {
@@ -353,17 +336,18 @@ onMounted(() => {
 
 .pagination-btn {
   padding: 8px 16px;
-  border: 1px solid #dee2e6;
-  background: white;
-  color: #667eea;
+  border: 1px solid var(--border-color);
+  background: var(--primary-white);
+  color: var(--primary-red);
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
+  background: var(--primary-red);
+  color: var(--primary-white);
 }
 
 .pagination-btn:disabled {
@@ -373,23 +357,24 @@ onMounted(() => {
 
 .page-number {
   padding: 8px 12px;
-  border: 1px solid #dee2e6;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--primary-white);
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.3s ease;
   min-width: 40px;
   text-align: center;
+  font-family: 'Poppins', sans-serif;
 }
 
 .page-number:hover {
-  background: #f8f9fa;
+  background: var(--gray-light);
 }
 
 .page-number.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+  background: var(--primary-red);
+  color: var(--primary-white);
+  border-color: var(--primary-red);
 }
 
 /* Responsive */

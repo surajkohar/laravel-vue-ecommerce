@@ -9,11 +9,38 @@ const frontendRoutes = [
     name: "Products", 
     component: () => import('@/pages/frontend/ProductsPage.vue')
   },
-  { 
-    path: "/products/:id", 
-    name: "ProductDetail", 
-    component: () => import('@/pages/frontend/ProductDetailPage.vue')
-  },
+
+  {
+  path: '/product/:id',
+  name: 'ProductDetail',
+  component: () => import('@/pages/frontend/ProductDetail.vue'),
+  meta: { title: 'Product Details - Pinders' }
+},
+{
+  path: '/wishlist',
+  name: 'Wishlist',
+  component: () => import('@/pages/frontend/Wishlist.vue'),
+  meta: { title: 'My Wishlist - Pinders' }
+},
+{
+  path: '/checkout',
+  name: 'Checkout',
+  component: () => import('@/pages/frontend/CheckoutPage.vue'),
+  meta: { title: 'My Wishlist - Pinders' }
+},
+{
+  path: '/myorders',
+  name: 'My Orders',
+  component: () => import('@/pages/frontend/MyOrders.vue'),
+  meta: { title: 'My Wishlist - Pinders' }
+},
+{
+  path: '/order-history',
+  name: 'History',
+  component: () => import('@/pages/frontend/OrderHistory.vue'),
+  meta: { title: 'My Wishlist - Pinders' }
+},
+
   { 
     path: "/login", 
     name: "Login", 

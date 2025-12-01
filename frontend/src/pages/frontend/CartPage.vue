@@ -20,7 +20,7 @@
             <div class="cart-section" v-if="cartStore.hasItems">
               <div class="section-header">
                 <h2>Your Items ({{ cartStore.totalItems }})</h2>
-                <button class="clear-cart-btn" @click="clearCart" v-if="cartStore.hasItems">
+                <button class="btn btn-outline" @click="clearCart" v-if="cartStore.hasItems">
                   Clear Cart
                 </button>
               </div>
@@ -82,8 +82,8 @@
             </div>
 
             <!-- Empty Cart State -->
-            <div class="empty-cart" v-else>
-              <div class="empty-cart-content">
+            <div class="empty-state" v-else>
+              <div class="empty-state-content">
                 <div class="empty-icon">
                   <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
                     <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.4 5.2 16.4H17M17 13V16.4M9 19C9 19.6 8.6 20 8 20C7.4 20 7 19.6 7 19C7 18.4 7.4 18 8 18C8.6 18 9 18.4 9 19ZM17 19C17 19.6 16.6 20 16 20C15.4 20 15 19.6 15 19C15 18.4 15.4 18 16 18C16.6 18 17 18.4 17 19Z" 
@@ -92,7 +92,7 @@
                 </div>
                 <h3>Your cart is empty</h3>
                 <p>Looks like you haven't added any items to your cart yet.</p>
-                <router-link to="/products" class="shop-btn">
+                <router-link to="/products" class="btn btn-primary">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
                     <path d="M6 2L3 6V20C3 20.5304 3.21071 21.0391 3.58579 21.4142C3.96086 21.7893 4.46957 22 5 22H19C19.5304 22 20.0391 21.7893 20.4142 21.4142C20.7893 21.0391 21 20.5304 21 20V6L18 2H6Z" 
                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -169,14 +169,14 @@
                 </p>
               </div>
 
-              <button class="checkout-btn" @click="proceedToCheckout">
+              <button class="btn btn-primary checkout-btn" @click="proceedToCheckout">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
                   <path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 Proceed to Checkout
               </button>
 
-              <router-link to="/products" class="continue-shopping">
+              <router-link to="/products" class="btn btn-outline continue-shopping">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
                   <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -245,20 +245,15 @@ const proceedToCheckout = () => {
 }
 </script>
 
+<style scoped src="@/assets/styles/frontend.css"></style>
+
 <style scoped>
 .cart-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--gray-light) 0%, #f1f5f9 100%);
   padding: 2rem 0 4rem;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-/* Page Header */
 .page-header {
   text-align: center;
   margin-bottom: 3rem;
@@ -310,7 +305,6 @@ const proceedToCheckout = () => {
   margin: 0 auto;
 }
 
-/* Cart Layout */
 .cart-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
@@ -318,7 +312,6 @@ const proceedToCheckout = () => {
   align-items: start;
 }
 
-/* Main Cart Content */
 .cart-main {
   display: flex;
   flex-direction: column;
@@ -326,9 +319,9 @@ const proceedToCheckout = () => {
 }
 
 .cart-section {
-  background: white;
+  background: var(--primary-white);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-medium);
   overflow: hidden;
 }
 
@@ -348,24 +341,6 @@ const proceedToCheckout = () => {
   font-weight: 700;
 }
 
-.clear-cart-btn {
-  background: none;
-  border: 1px solid var(--border-color);
-  color: var(--gray-medium);
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.clear-cart-btn:hover {
-  background: #fee;
-  border-color: var(--primary-red);
-  color: var(--primary-red);
-}
-
-/* Cart Items */
 .cart-items {
   padding: 1rem 0;
 }
@@ -395,7 +370,7 @@ const proceedToCheckout = () => {
   height: 100px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }
 
 .item-image img {
@@ -409,7 +384,7 @@ const proceedToCheckout = () => {
   top: -5px;
   right: -5px;
   background: var(--primary-red);
-  color: white;
+  color: var(--primary-white);
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -474,7 +449,7 @@ const proceedToCheckout = () => {
 }
 
 .qty-btn {
-  background: white;
+  background: var(--primary-white);
   border: none;
   padding: 8px 12px;
   cursor: pointer;
@@ -482,6 +457,7 @@ const proceedToCheckout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--primary-black);
 }
 
 .qty-btn:hover:not(:disabled) {
@@ -535,16 +511,15 @@ const proceedToCheckout = () => {
   color: var(--primary-red);
 }
 
-/* Empty Cart */
-.empty-cart {
-  background: white;
+.empty-state {
+  background: var(--primary-white);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-medium);
   padding: 4rem 2rem;
   text-align: center;
 }
 
-.empty-cart-content {
+.empty-state-content {
   max-width: 400px;
   margin: 0 auto;
 }
@@ -554,39 +529,18 @@ const proceedToCheckout = () => {
   opacity: 0.7;
 }
 
-.empty-cart h3 {
+.empty-state h3 {
   color: var(--primary-black);
   margin-bottom: 1rem;
   font-size: 1.5rem;
 }
 
-.empty-cart p {
+.empty-state p {
   color: var(--gray-medium);
   margin-bottom: 2rem;
   line-height: 1.5;
 }
 
-.shop-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 14px 28px;
-  background: var(--primary-red);
-  color: white;
-  text-decoration: none;
-  border-radius: 10px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  border: 2px solid var(--primary-red);
-}
-
-.shop-btn:hover {
-  background: #c00;
-  border-color: #c00;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(227, 27, 35, 0.3);
-}
-
-/* Trust Badges */
 .trust-badges {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -599,9 +553,9 @@ const proceedToCheckout = () => {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: white;
+  background: var(--primary-white);
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-light);
 }
 
 .trust-icon {
@@ -623,16 +577,15 @@ const proceedToCheckout = () => {
   font-size: 13px;
 }
 
-/* Sidebar */
 .cart-sidebar {
   position: sticky;
   top: 120px;
 }
 
 .summary-card {
-  background: white;
+  background: var(--primary-white);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-medium);
   padding: 2rem;
   position: sticky;
   top: 120px;
@@ -687,7 +640,6 @@ const proceedToCheckout = () => {
   font-size: 1.4rem;
 }
 
-/* Shipping Progress */
 .shipping-progress {
   margin-bottom: 1.5rem;
 }
@@ -720,51 +672,26 @@ const proceedToCheckout = () => {
   font-weight: 600;
 }
 
-/* Buttons */
 .checkout-btn {
   width: 100%;
   padding: 16px;
-  background: var(--primary-red);
-  color: white;
-  border: none;
-  border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.checkout-btn:hover {
-  background: #c00;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(227, 27, 35, 0.3);
-}
-
 .continue-shopping {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
-  color: var(--primary-black);
-  text-decoration: none;
-  border: 2px solid var(--border-color);
-  border-radius: 10px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  margin-bottom: 1.5rem;
 }
 
-.continue-shopping:hover {
-  border-color: var(--primary-red);
-  color: var(--primary-red);
-  background: #fef2f2;
-}
-
-/* Payment Methods */
 .payment-methods {
   text-align: center;
   padding-top: 1.5rem;
@@ -862,8 +789,7 @@ const proceedToCheckout = () => {
   }
   
   .checkout-btn,
-  .continue-shopping,
-  .shop-btn {
+  .continue-shopping {
     padding: 14px 20px;
     font-size: 1rem;
   }

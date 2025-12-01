@@ -12,7 +12,8 @@
 import Navbar from '@/components/frontend/Navbar.vue'
 import Footer from '@/components/frontend/Footer.vue'
 </script>
-<style scoped src="@/assets/styles/main.css"></style>
+
+<style scoped src="@/assets/styles/frontend.css"></style>
 <style scoped src="@/assets/styles/animations.css"></style>
 
 <style scoped>
