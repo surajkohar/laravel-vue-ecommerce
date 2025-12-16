@@ -70,7 +70,7 @@
                       @change="updateCategoryFilter"
                     >
                     <span class="checkmark"></span>
-                    <span class="label-text">{{ category.name }}</span>
+                    <span class="label-text">{{ category.title }}</span>
                     <span class="item-count">({{ category.product_count || 0 }})</span>
                   </label>
                 </div>
@@ -97,7 +97,7 @@
                       @change="updateBrandFilter"
                     >
                     <span class="checkmark"></span>
-                    <span class="label-text">{{ brand.name }}</span>
+                    <span class="label-text">{{ brand.title }}</span>
                     <span class="item-count">({{ brand.product_count || 0 }})</span>
                   </label>
                 </div>
@@ -440,19 +440,28 @@ const toggleFilterGroup = (group) => {
 
 const updatePriceFilter = () => {
   productsStore.updateFilters({ 
-    min_price: priceRange.value.min,
-    max_price: priceRange.value.max
+    min_price: priceRange.value.min || '',
+    max_price: priceRange.value.max || ''
   })
   productsStore.fetchProducts(1)
 }
 
 const updateCategoryFilter = () => {
-  productsStore.updateFilters({ categories: selectedCategories.value })
+  if (selectedCategories.value.length > 0) {
+    productsStore.updateFilters({ category: selectedCategories.value[0] }) // Take first selected
+  } else {
+    productsStore.updateFilters({ category: '' })
+  }
   productsStore.fetchProducts(1)
 }
 
+
 const updateBrandFilter = () => {
-  productsStore.updateFilters({ brands: selectedBrands.value })
+  if (selectedBrands.value.length > 0) {
+    productsStore.updateFilters({ brand: selectedBrands.value[0] }) // Take first selected
+  } else {
+    productsStore.updateFilters({ brand: '' })
+  }
   productsStore.fetchProducts(1)
 }
 
@@ -479,7 +488,18 @@ const toggleColor = (color) => {
 }
 
 const handleSortChange = (selectedOption) => {
-  productsStore.updateFilters({ sort_by: selectedOption.value })
+  let sortValue = selectedOption.value
+  
+  // Map vue-select values to your API sort values
+  const sortMap = {
+    'created_at': 'newest',
+    'price': 'price_low',
+    'price_desc': 'price_high',
+    'name': 'name_asc',
+    'popularity': 'newest' // Default to newest if no popularity sort
+  }
+  
+  productsStore.updateFilters({ sort_by: sortMap[sortValue] || 'newest' })
   productsStore.fetchProducts(1)
 }
 

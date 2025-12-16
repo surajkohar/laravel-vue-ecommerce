@@ -23,10 +23,11 @@ class ProductCategories extends AppModel
     *
     * @return ProductCategories
     */
-    public function products()
-    {
-        return $this->belongsToMany(Products::class, 'product_category_relation', 'category_id', 'product_id');
-    }
+public function products()
+{
+    // Change from belongsToMany to hasMany with direct foreign key
+    return $this->hasMany(Products::class, 'category_id', 'id');
+}
 
     /**
     * Products -> Admins belongsTO relation

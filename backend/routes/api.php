@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\Products\BrandsController;
 use App\Http\Controllers\Admin\Products\ProductCategoriesController;
 use App\Http\Controllers\Admin\SizeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Frontend\BrandController;
+use App\Http\Controllers\Frontend\CategoryController;
+use App\Http\Controllers\Frontend\ProductsController as FrontendProductsController;
+use App\Http\Controllers\Frontend\WishlistController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UsersController;
@@ -54,5 +59,30 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::get('/homepage/fetch-products', [ProductsController::class, 'fetchProducts']);
+// Route::get('/homepage/fetch-products', [ProductsController::class, 'fetchProducts']);
 
+// ==================== FRONTEND ROUTES (Customer) ====================
+Route::prefix('frontend')->group(function () {
+    // Public routes (no authentication required)
+    Route::get('/products', [FrontendProductsController::class, 'index']);
+    Route::get('/products/featured', [FrontendProductsController::class, 'featured']);
+    Route::get('/products/{slug}', [FrontendProductsController::class, 'show']);
+    Route::get('/products/id/{id}', [FrontendProductsController::class, 'showById']);
+    Route::get('/products/search', [FrontendProductsController::class, 'search']);
+    Route::get('/products/related/{id}', [FrontendProductsController::class, 'related']);
+
+    // Categories
+    Route::get('/categories', [CategoryController::class, 'index']);
+    Route::get('/categories/{slug}/products', [CategoryController::class, 'products']);
+
+    // Brands
+    Route::get('/brands', [BrandController::class, 'index']);
+    Route::get('/brands/{slug}/products', [BrandController::class, 'products']);
+
+    // Wishlist (requires authentication)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/wishlist/add', [WishlistController::class, 'add']);
+        Route::get('/wishlist', [WishlistController::class, 'index']);
+        Route::delete('/wishlist/{id}', [WishlistController::class, 'remove']);
+    });
+});

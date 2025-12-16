@@ -6,104 +6,113 @@
     <div class="product-detail">
       <div class="container">
         <!-- Breadcrumb -->
-        <nav class="breadcrumb">
+        <nav class="breadcrumb" v-if="productData.product">
           <router-link to="/" class="breadcrumb-link">Home</router-link>
           <span class="breadcrumb-separator">/</span>
           <router-link to="/products" class="breadcrumb-link">Products</router-link>
           <span class="breadcrumb-separator">/</span>
-          <router-link :to="`/products?category=${product.category}`" class="breadcrumb-link">{{ product.category }}</router-link>
+          <router-link :to="`/products?category=${productData.product.category_id}`" class="breadcrumb-link">
+            {{ productData.product.category_title }}
+          </router-link>
           <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-current">{{ product.name }}</span>
+          <span class="breadcrumb-current">{{ productData.product.name }}</span>
         </nav>
 
-        <div class="product-layout">
+        <div class="product-layout" v-if="productData.product">
           <!-- Product Images -->
           <div class="product-gallery">
             <div class="main-image">
-              <img :src="selectedImage || product.mainImage" :alt="product.name" />
-              <div class="image-badge" v-if="product.isNew">New</div>
-              <div class="image-badge sale" v-if="product.onSale">Sale</div>
+              <img :src="selectedImage || productData.product.main_image_url" :alt="productData.product.name" />
+              <div class="image-badge" v-if="productData.product.isNew">New</div>
+              <div class="image-badge sale" v-if="productData.product.onSale">Sale</div>
+              <div class="image-badge out-of-stock" v-if="!productData.product.has_stock">Out of Stock</div>
             </div>
-            <div class="image-thumbnails">
-              <div 
-                v-for="(image, index) in product.images" 
-                :key="index"
-                class="thumbnail"
-                :class="{ active: selectedImage === image }"
-                @click="selectedImage = image"
-              >
-                <img :src="image" :alt="`${product.name} view ${index + 1}`" />
-              </div>
-            </div>
+<div class="image-thumbnails">
+  <!-- Main image thumbnail -->
+  <div class="thumbnail"
+       :class="{ active: selectedImage === productData.product.main_image_url }"
+       @click="selectImage(productData.product.main_image_url)">
+    <img :src="productData.product.main_image_url" :alt="productData.product.name" />
+  </div>
+  <!-- Variant images -->
+  <div v-for="(image, index) in allVariantImages" :key="index"
+       class="thumbnail"
+       :class="{ active: selectedImage === image.url }"
+       @click="selectImage(image.url)">
+    <img :src="image.url" :alt="`${productData.product.name} view ${index + 1}`" />
+  </div>
+</div>
           </div>
 
           <!-- Product Info -->
           <div class="product-info">
             <div class="product-header">
-              <h1 class="product-title">{{ product.name }}</h1>
+              <h1 class="product-title">{{ productData.product.name }}</h1>
               <div class="product-rating">
                 <div class="stars">
-                  <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= product.rating }">★</span>
+                  <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= productRating }">★</span>
                 </div>
-                <span class="rating-text">({{ product.reviewCount }} reviews)</span>
+                <span class="rating-text">({{ productReviews.length }} reviews)</span>
               </div>
             </div>
 
             <div class="product-pricing">
               <div class="price-container">
-                <span class="current-price">£{{ product.price }}</span>
-                <span class="original-price" v-if="product.originalPrice">£{{ product.originalPrice }}</span>
-                <span class="discount-badge" v-if="product.onSale">Save {{ calculateDiscount() }}%</span>
+                <span class="current-price">£{{ selectedPrice || productData.product.price }}</span>
+                <span class="original-price" v-if="productData.product.originalPrice">£{{ productData.product.originalPrice }}</span>
+                <span class="discount-badge" v-if="productData.product.onSale">Save {{ calculateDiscount() }}%</span>
               </div>
               <div class="vat-text">Inc. VAT</div>
             </div>
 
             <div class="product-description">
-              <p>{{ product.description }}</p>
+              <p>{{ productDescription }}</p>
             </div>
 
             <!-- Product Variants -->
-            <div class="product-variants">
+            <div class="product-variants" v-if="productData.variants && productData.variants.length > 0">
               <!-- Color Variant -->
-              <div class="variant-group" v-if="product.colors && product.colors.length > 0">
+              <div class="variant-group">
                 <label class="variant-label">Color:</label>
                 <div class="variant-options">
                   <div
-                    v-for="color in product.colors"
-                    :key="color.id"
+                    v-for="variant in productData.variants"
+                    :key="variant.id"
                     class="variant-option color-option"
                     :class="{ 
-                      active: selectedVariant.color === color.id,
-                      unavailable: !color.inStock 
+                      active: selectedVariant.variantId === variant.id,
+                      unavailable: !variant.has_stock 
                     }"
-                    @click="selectColor(color)"
-                    :title="color.inStock ? color.name : 'Out of stock'"
+                    @click="selectVariant(variant)"
+                    :title="variant.has_stock ? variant.color_name : 'Out of stock'"
                   >
-                    <span class="color-swatch" :style="{ backgroundColor: color.hex }"></span>
-                    <span class="color-name">{{ color.name }}</span>
+                    <span class="color-swatch" :style="{ backgroundColor: variant.color }"></span>
+                    <span class="color-name">{{ variant.color_name }}</span>
                   </div>
                 </div>
               </div>
 
               <!-- Size Variant -->
-              <div class="variant-group" v-if="product.sizes && product.sizes.length > 0">
+              <div class="variant-group" v-if="selectedVariant.sizes && selectedVariant.sizes.length > 0">
                 <label class="variant-label">Size:</label>
                 <div class="variant-options">
                   <div
-                    v-for="size in availableSizes"
+                    v-for="size in selectedVariant.sizes"
                     :key="size.id"
                     class="variant-option size-option"
                     :class="{ 
-                      active: selectedVariant.size === size.id,
-                      unavailable: !size.inStock 
+                      active: selectedVariant.sizeId === size.id,
+                      unavailable: !size.has_stock 
                     }"
                     @click="selectSize(size)"
-                    :title="size.inStock ? size.name : 'Out of stock'"
+                    :title="size.has_stock ? `Size: ${size.size_title} (Stock: ${size.stock})` : 'Out of stock'"
                   >
-                    {{ size.name }}
+                    {{ size.size_title }}
                   </div>
                 </div>
-                <a href="#" class="size-guide-link">Size Guide</a>
+                <a :href="productData.product.size_guide_url" target="_blank" class="size-guide-link" v-if="productData.product.size_guide_url">
+                  Size Guide
+                </a>
               </div>
             </div>
 
@@ -147,7 +156,7 @@
                   Add to Cart
                 </button>
                 
-                <button class="btn btn-outline wishlist-btn">
+                <button class="btn btn-outline wishlist-btn" @click="addToWishlist">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <path d="M19.5 12.572L12 20L4.5 12.572C3.605 11.677 3 10.391 3 9C3 6.791 4.791 5 7 5C8.309 5 9.5 5.671 10.214 6.714L12 9L13.786 6.714C14.5 5.671 15.691 5 17 5C19.209 5 21 6.791 21 9C21 10.391 20.395 11.677 19.5 12.572Z" 
                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -185,16 +194,28 @@
         </div>
 
         <!-- Product Tabs -->
-        <div class="product-tabs">
+        <div class="product-tabs" v-if="productData.product">
           <div class="tabs-header">
             <button 
-              v-for="tab in tabs" 
-              :key="tab.id"
               class="tab-btn"
-              :class="{ active: activeTab === tab.id }"
-              @click="activeTab = tab.id"
+              :class="{ active: activeTab === 'description' }"
+              @click="activeTab = 'description'"
             >
-              {{ tab.label }}
+              Description
+            </button>
+            <button 
+              class="tab-btn"
+              :class="{ active: activeTab === 'specifications' }"
+              @click="activeTab = 'specifications'"
+            >
+              Specifications
+            </button>
+            <button 
+              class="tab-btn"
+              :class="{ active: activeTab === 'reviews' }"
+              @click="activeTab = 'reviews'"
+            >
+              Reviews ({{ productReviews.length }})
             </button>
           </div>
           
@@ -203,9 +224,9 @@
             <div v-if="activeTab === 'description'" class="tab-panel">
               <div class="description-content">
                 <h3>Product Description</h3>
-                <p>{{ product.fullDescription }}</p>
+                <p>{{ productFullDescription }}</p>
                 <div class="features-list">
-                  <div v-for="feature in product.features" :key="feature" class="feature">
+                  <div v-for="feature in productFeatures" :key="feature" class="feature">
                     <span class="check-icon">✓</span>
                     {{ feature }}
                   </div>
@@ -216,9 +237,38 @@
             <!-- Specifications Tab -->
             <div v-if="activeTab === 'specifications'" class="tab-panel">
               <div class="specs-grid">
-                <div v-for="spec in product.specifications" :key="spec.name" class="spec-item">
-                  <span class="spec-name">{{ spec.name }}:</span>
-                  <span class="spec-value">{{ spec.value }}</span>
+                <div class="spec-item">
+                  <span class="spec-name">SKU:</span>
+                  <span class="spec-value">{{ productData.product.sku }}</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-name">Gender:</span>
+                  <span class="spec-value">{{ productData.product.gender }}</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-name">Brand:</span>
+                  <span class="spec-value">{{ productData.product.brand_title }}</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-name">Category:</span>
+                  <span class="spec-value">{{ productData.product.category_title }}</span>
+                </div>
+                <div class="spec-item" v-if="productData.product.purchase_price">
+                  <span class="spec-name">Purchase Price:</span>
+                  <span class="spec-value">£{{ productData.product.purchase_price }}</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-name">Stock:</span>
+                  <span class="spec-value">{{ productData.product.stock }} units</span>
+                </div>
+                <!-- Add more specifications from your database if available -->
+                <div class="spec-item" v-if="productData.product.material">
+                  <span class="spec-name">Material:</span>
+                  <span class="spec-value">{{ productData.product.material }}</span>
+                </div>
+                <div class="spec-item" v-if="productData.product.certification">
+                  <span class="spec-name">Certification:</span>
+                  <span class="spec-value">{{ productData.product.certification }}</span>
                 </div>
               </div>
             </div>
@@ -228,16 +278,16 @@
               <div class="reviews-content">
                 <div class="reviews-summary">
                   <div class="average-rating">
-                    <div class="rating-score">{{ product.rating }}</div>
+                    <div class="rating-score">{{ productRating.toFixed(1) }}</div>
                     <div class="stars-large">
-                      <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= product.rating }">★</span>
+                      <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= productRating }">★</span>
                     </div>
-                    <div class="rating-count">{{ product.reviewCount }} reviews</div>
+                    <div class="rating-count">{{ productReviews.length }} reviews</div>
                   </div>
                 </div>
                 
                 <div class="reviews-list">
-                  <div v-for="review in product.reviews" :key="review.id" class="review">
+                  <div v-for="review in productReviews" :key="review.id" class="review">
                     <div class="review-header">
                       <div class="reviewer">{{ review.reviewer }}</div>
                       <div class="review-date">{{ review.date }}</div>
@@ -248,13 +298,19 @@
                     <p class="review-text">{{ review.comment }}</p>
                   </div>
                 </div>
+                
+                <!-- Empty reviews state -->
+                <div v-if="productReviews.length === 0" class="no-reviews">
+                  <p>No reviews yet. Be the first to review this product!</p>
+                  <button class="btn btn-primary">Write a Review</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Related Products -->
-        <div class="related-products">
+        <div class="related-products" v-if="relatedProducts.length > 0">
           <h2 class="section-title">You May Also Like</h2>
           <div class="products-grid">
             <ProductCard 
@@ -271,134 +327,71 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { toast } from 'vue3-toastify'
 import FrontendLayout from '@/layouts/FrontendLayout.vue'
 import ProductCard from '@/components/frontend/ProductCard.vue'
 import Loader from '@/components/frontend/Loader.vue'
+import { useProductsStore } from '@/store/products'
 import { useCartStore } from '@/store/cart'
+import { useWishlistStore } from '@/store/wishlist'
 
 const route = useRoute()
+const productsStore = useProductsStore()
 const cartStore = useCartStore()
+const wishlistStore = useWishlistStore()
 
 const loading = ref(true)
-const product = ref({})
+const productData = ref({})
 const selectedImage = ref('')
 const selectedVariant = ref({
-  color: null,
-  size: null
+  variantId: null,
+  variant: null,
+  sizeId: null,
+  size: null,
+  sizes: []
 })
 const quantity = ref(1)
 const activeTab = ref('description')
+const relatedProducts = ref([])
 
-// Sample product data - in real app, this would come from API
-const sampleProduct = {
-  id: 1,
-  name: "Professional Work Jacket - Hi-Vis Orange",
-  category: "workwear",
-  description: "High-visibility professional work jacket with multiple pockets and waterproof construction.",
-  fullDescription: "This professional work jacket is designed for maximum visibility and comfort in demanding work environments. Features include waterproof construction, multiple utility pockets, reinforced stitching, and breathable fabric for all-day comfort.",
-  price: 49.99,
-  originalPrice: 64.99,
-  onSale: true,
-  isNew: true,
-  rating: 4.5,
-  reviewCount: 124,
-  mainImage: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-  images: [
-    "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  ],
-  colors: [
-    { id: 'orange', name: 'Hi-Vis Orange', hex: '#FF6B00', inStock: true },
-    { id: 'yellow', name: 'Hi-Vis Yellow', hex: '#FFD600', inStock: true },
-    { id: 'red', name: 'Hi-Vis Red', hex: '#FF3D00', inStock: false }
-  ],
-  sizes: [
-    { id: 's', name: 'S', inStock: true, stock: 15 },
-    { id: 'm', name: 'M', inStock: true, stock: 25 },
-    { id: 'l', name: 'L', inStock: true, stock: 8 },
-    { id: 'xl', name: 'XL', inStock: true, stock: 12 },
-    { id: 'xxl', name: 'XXL', inStock: false, stock: 0 }
-  ],
-  features: [
-    "Waterproof and windproof construction",
-    "Multiple utility pockets for tools",
-    "Reflective stripes for enhanced visibility",
-    "Breathable fabric with ventilation",
-    "Reinforced stitching for durability",
-    "Adjustable cuffs and hem"
-  ],
-  specifications: [
-    { name: 'Material', value: 'Polyester with PVC coating' },
-    { name: 'Color', value: 'Hi-Vis Orange/Yellow' },
-    { name: 'Sizes', value: 'S-XXL' },
-    { name: 'Waterproof', value: 'Yes' },
-    { name: 'Breathable', value: 'Yes' },
-    { name: 'Pockets', value: '6' },
-    { name: 'Certification', value: 'EN ISO 20471' }
-  ],
-  reviews: [
-    {
-      id: 1,
-      reviewer: "John Construction",
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "Excellent jacket! Very durable and keeps me dry in all weather conditions. The visibility is fantastic."
-    },
-    {
-      id: 2,
-      reviewer: "Sarah Builder",
-      rating: 4,
-      date: "1 month ago",
-      comment: "Great quality and fits perfectly. The pockets are very useful for carrying tools. Highly recommended!"
-    }
-  ]
-}
-
-const tabs = [
-  { id: 'description', label: 'Description' },
-  { id: 'specifications', label: 'Specifications' },
-  { id: 'reviews', label: `Reviews (${sampleProduct.reviewCount})` }
-]
-
-const relatedProducts = ref([
+// Sample reviews data (in real app, this would come from API)
+const sampleReviews = [
+  {
+    id: 1,
+    reviewer: "John Construction",
+    rating: 5,
+    date: "2 weeks ago",
+    comment: "Excellent quality! Very durable and keeps me dry in all weather conditions."
+  },
   {
     id: 2,
-    name: "Work Trousers - Multi-Pocket",
-    price: 39.99,
-    image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    category: "workwear"
-  },
-  {
-    id: 3,
-    name: "Safety Helmet - Vented",
-    price: 24.99,
-    image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    category: "safety"
-  },
-  {
-    id: 4,
-    name: "Steel Toe Boots - Waterproof",
-    price: 89.99,
-    image: "https://images.unsplash.com/photo-1542281286-9e0a16bb7366?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    category: "footwear"
+    reviewer: "Sarah Builder",
+    rating: 4,
+    date: "1 month ago",
+    comment: "Great quality and fits perfectly. The pockets are very useful for carrying tools."
   }
-])
+]
 
 // Computed properties
-const availableSizes = computed(() => {
-  if (!selectedVariant.value.color) return sampleProduct.sizes
-  // In real app, filter sizes based on selected color availability
-  return sampleProduct.sizes
+const allVariantImages = computed(() => {
+  if (!productData.value.variants) return []
+  
+  const images = []
+  productData.value.variants.forEach(variant => {
+    if (variant.images && variant.images.length > 0) {
+      variant.images.forEach(image => {
+        images.push(image)
+      })
+    }
+  })
+  return images
 })
 
 const selectedVariantStock = computed(() => {
   if (!selectedVariant.value.size) return 0
-  const size = sampleProduct.sizes.find(s => s.id === selectedVariant.value.size)
-  return size ? size.stock : 0
+  return selectedVariant.value.size.stock || 0
 })
 
 const isInStock = computed(() => {
@@ -409,20 +402,107 @@ const maxQuantity = computed(() => {
   return selectedVariantStock.value
 })
 
-const calculateDiscount = () => {
-  const discount = ((sampleProduct.originalPrice - sampleProduct.price) / sampleProduct.originalPrice) * 100
-  return Math.round(discount)
-}
+const selectedPrice = computed(() => {
+  if (selectedVariant.value.size && selectedVariant.value.size.price) {
+    return selectedVariant.value.size.price
+  }
+  return productData.value.product?.price || 0
+})
+
+const productRating = computed(() => {
+  // For now, use average of sample reviews
+  // In real app, fetch from API
+  if (productReviews.value.length === 0) return 4.5
+  const total = productReviews.value.reduce((sum, review) => sum + review.rating, 0)
+  return total / productReviews.value.length
+})
+
+const productReviews = computed(() => {
+  // For now, use sample reviews
+  // In real app, fetch from API
+  return sampleReviews
+})
+
+const productDescription = computed(() => {
+  if (!productData.value.product?.description) return ''
+  // Strip HTML tags for short description
+  return productData.value.product.description.replace(/<[^>]*>/g, '').substring(0, 150) + '...'
+})
+
+const productFullDescription = computed(() => {
+  if (!productData.value.product?.description) return ''
+  // Strip HTML tags and clean up
+  let desc = productData.value.product.description.replace(/<[^>]*>/g, ' ')
+  desc = desc.replace(/\s+/g, ' ').trim()
+  return desc
+})
+
+const productFeatures = computed(() => {
+  const features = []
+  const description = productData.value.product?.description || ''
+  
+  // Extract features from description
+  const featureKeywords = [
+    { keyword: 'waterproof', text: 'Waterproof' },
+    { keyword: 'breathable', text: 'Breathable fabric' },
+    { keyword: 'reinforced', text: 'Reinforced stitching' },
+    { keyword: 'pocket', text: 'Multiple pockets' },
+    { keyword: 'durable', text: 'Durable construction' },
+    { keyword: 'comfort', text: 'Comfortable fit' },
+    { keyword: 'adjustable', text: 'Adjustable features' }
+  ]
+  
+  featureKeywords.forEach(feature => {
+    if (description.toLowerCase().includes(feature.keyword)) {
+      features.push(feature.text)
+    }
+  })
+  
+  return features
+})
 
 // Methods
-const selectColor = (color) => {
-  if (!color.inStock) return
-  selectedVariant.value.color = color.id
+const selectVariant = (variant) => {
+  if (!variant.has_stock) {
+    toast.warning('This color is out of stock')
+    return
+  }
+  
+  selectedVariant.value.variantId = variant.id
+  selectedVariant.value.variant = variant
+  selectedVariant.value.sizes = variant.sizes || []
+  
+  // Reset selected size
+  selectedVariant.value.sizeId = null
+  selectedVariant.value.size = null
+  
+  // Auto-select first available size
+  if (variant.sizes && variant.sizes.length > 0) {
+    const firstAvailableSize = variant.sizes.find(size => size.has_stock)
+    if (firstAvailableSize) {
+      selectSize(firstAvailableSize)
+    }
+  }
+  
+  // Set first variant image as selected if available
+  if (variant.images && variant.images.length > 0) {
+    selectedImage.value = variant.images[0].url
+  }
 }
 
 const selectSize = (size) => {
-  if (!size.inStock) return
-  selectedVariant.value.size = size.id
+  if (!size.has_stock) {
+    toast.warning('This size is out of stock')
+    return
+  }
+  
+  selectedVariant.value.sizeId = size.id
+  selectedVariant.value.size = size
+  
+  // Reset quantity if exceeds available stock
+  if (quantity.value > size.stock) {
+    quantity.value = size.stock
+  }
 }
 
 const increaseQuantity = () => {
@@ -437,48 +517,168 @@ const decreaseQuantity = () => {
   }
 }
 
+const calculateDiscount = () => {
+  const product = productData.value.product
+  if (!product.originalPrice || !product.price) return 0
+  const discount = ((parseFloat(product.originalPrice) - parseFloat(product.price)) / parseFloat(product.originalPrice)) * 100
+  return Math.round(discount)
+}
+
+// Computed property to map images to their variants
+const imageVariantMap = computed(() => {
+  const map = new Map();
+  
+  if (!productData.value.variants) return map;
+  
+  productData.value.variants.forEach(variant => {
+    if (variant.images && variant.images.length > 0) {
+      variant.images.forEach(image => {
+        map.set(image.url, variant.id);
+      });
+    }
+  });
+  
+  // Also map the main image to the first variant or handle separately
+  if (productData.value.product && productData.value.variants.length > 0) {
+    map.set(productData.value.product.main_image_url, productData.value.variants[0].id);
+  }
+  
+  return map;
+});
+
+// Updated method when clicking on thumbnails
+const selectImage = (imageUrl) => {
+  selectedImage.value = imageUrl;
+  
+  // Find which variant this image belongs to
+  const variantId = imageVariantMap.value.get(imageUrl);
+  if (variantId) {
+    const variant = productData.value.variants.find(v => v.id === variantId);
+    if (variant && variant.has_stock) {
+      selectVariant(variant);
+    }
+  }
+};
+
 const addToCart = () => {
   if (!isInStock.value) {
     toast.error('This product is out of stock!')
     return
   }
 
-  const variant = {
-    color: selectedVariant.value.color,
-    size: selectedVariant.value.size
+  const cartItem = {
+    id: productData.value.product.id,
+    name: productData.value.product.name,
+    price: selectedPrice.value,
+    image: selectedImage.value || productData.value.product.main_image_url,
+    quantity: quantity.value,
+    variant_id: selectedVariant.value.variantId,
+    variant_name: selectedVariant.value.variant?.color_name || null,
+    size: selectedVariant.value.size?.size_title || null,
+    stock: selectedVariantStock.value
   }
 
-  cartStore.addToCart(sampleProduct, quantity.value, variant)
-  toast.success('Product added to cart!')
+  cartStore.addToCart(cartItem)
+  toast.success(`${productData.value.product.name} added to cart!`)
   
   // Reset quantity
   quantity.value = 1
 }
 
-const handleAddToCart = (product) => {
-  cartStore.addToCart(product)
-  toast.success('Product added to cart!')
+const addToWishlist = () => {
+  if (!productData.value.product) return
+  
+  const added = wishlistStore.addToWishlist({
+    id: productData.value.product.id,
+    name: productData.value.product.name,
+    price: productData.value.product.price,
+    image: productData.value.product.main_image_url,
+    category: productData.value.product.category_title,
+    brand: productData.value.product.brand_title,
+    stock: productData.value.product.stock
+  })
+  
+  if (added) {
+    toast.success(`${productData.value.product.name} added to wishlist!`)
+  } else {
+    toast.info(`${productData.value.product.name} removed from wishlist!`)
+  }
 }
 
-// Lifecycle
-onMounted(async () => {
-  // Simulate API call
-  setTimeout(() => {
-    product.value = sampleProduct
-    selectedImage.value = sampleProduct.mainImage
-    // Set default variants
-    if (sampleProduct.colors.length > 0) {
-      selectedVariant.value.color = sampleProduct.colors[0].id
+const handleAddToCart = (product) => {
+  cartStore.addToCart({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    image: product.main_image_url,
+    quantity: 1
+  })
+  toast.success(`${product.name} added to cart!`)
+}
+
+const fetchProduct = async () => {
+  loading.value = true
+  try {
+    const slug = route.params.slug
+    const id = route.params.id
+    
+    let data
+    
+    if (slug) {
+      // Check if slug is actually an ID (like "product-13")
+      if (slug.startsWith('product-')) {
+        const productId = slug.replace('product-', '')
+        data = await productsStore.fetchProductById(productId)
+      } else {
+        data = await productsStore.fetchProductBySlug(slug)
+      }
+    } else if (id) {
+      data = await productsStore.fetchProductById(id)
     }
-    if (sampleProduct.sizes.length > 0) {
-      selectedVariant.value.size = sampleProduct.sizes[0].id
+    
+    if (data && data.product) {
+      productData.value = data
+      
+      // Set default selected image
+      selectedImage.value = data.product.main_image_url
+      
+      // Set default variant if available
+      if (data.variants && data.variants.length > 0) {
+        const firstVariant = data.variants[0]
+        selectVariant(firstVariant)
+      }
+      
+      // Fetch related products
+      if (data.related_products) {
+        relatedProducts.value = data.related_products
+      }
     }
+  } catch (error) {
+    console.error('Error fetching product:', error)
+    toast.error('Failed to load product details')
+  } finally {
     loading.value = false
-  }, 1000)
+  }
+}
+
+// Watch for route changes
+watch(() => route.params.slug, () => {
+  fetchProduct()
+})
+watch(() => route.params.id, () => {
+  fetchProduct()
+})
+
+// Lifecycle
+onMounted(() => {
+  fetchProduct()
 })
 </script>
 
 <style scoped>
+/* ALL YOUR PREVIOUS CSS STYLES REMAIN EXACTLY THE SAME */
+/* I'm including the complete CSS from your previous version */
+
 .product-detail {
   padding: 2rem 0 4rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -566,6 +766,11 @@ onMounted(async () => {
 
 .image-badge.sale {
   background: #22c55e;
+  top: 50px;
+}
+
+.image-badge.out-of-stock {
+  background: #6b7280;
   top: 50px;
 }
 
@@ -1026,6 +1231,11 @@ onMounted(async () => {
   color: var(--gray-dark);
 }
 
+/* Reviews Tab */
+.reviews-content {
+  padding: 1rem 0;
+}
+
 .reviews-summary {
   display: flex;
   align-items: center;
@@ -1100,6 +1310,12 @@ onMounted(async () => {
   color: var(--gray-dark);
   line-height: 1.6;
   margin: 0;
+}
+
+.no-reviews {
+  text-align: center;
+  padding: 3rem;
+  color: var(--gray-medium);
 }
 
 /* Related Products */
@@ -1196,5 +1412,79 @@ onMounted(async () => {
   .products-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.multi-size-selection {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: #fafafa;
+  border-radius: 12px;
+}
+
+.selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.btn-add-size {
+  background: var(--primary-red);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.size-quantity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.row-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.size-select {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  min-width: 200px;
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.btn-remove:hover {
+  background: #fee2e2;
+}
+
+.row-total {
+  font-weight: 700;
+  color: var(--primary-red);
+  min-width: 80px;
+  text-align: right;
 }
 </style>

@@ -15,6 +15,13 @@ class Brands extends AppModel
     protected $primaryKey = 'id';
     public $timestamps = false;
 
+
+    // In App\Models\Admin\Brands model
+public function products()
+{
+    return $this->hasMany(Products::class, 'brands_id', 'id');
+}
+
     /**
     * Get resize images
     *

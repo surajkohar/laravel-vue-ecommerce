@@ -180,7 +180,7 @@ class ProductsController extends ApiController
             try {
                 $data = Arr::undot($request->all());
 
-                Log::info($data);
+                // Log::info($data);
                 // Validate
                 $validator = Validator::make($request->all(), [
                     'name'              => 'required|string',
@@ -254,14 +254,17 @@ class ProductsController extends ApiController
                         'color_name' => $variantData['color_name'],
                     ]);
 
-                    // Sync sizes with prices
-                    $sizePrices = [];
-                    foreach ($variantData['sizes'] as $sizeId) {
-                        if (isset($variantData['size_prices'][$sizeId])) {
-                            $sizePrices[$sizeId] = ['price' => $variantData['size_prices'][$sizeId]];
-                        }
+                // Sync sizes with prices and stock
+                $sizeData = [];
+                foreach ($variantData['sizes'] as $sizeId) {
+                    if (isset($variantData['size_prices'][$sizeId])) {
+                        $sizeData[$sizeId] = [
+                            'price' => $variantData['size_prices'][$sizeId],
+                            'stock' => $variantData['size_stock'][$sizeId] ?? 0,
+                        ];
                     }
-                    $variant->sizes()->sync($sizePrices);
+                }
+                $variant->sizes()->sync($sizeData);
 
                     // Save images
                     foreach ($request->file("variants.$index.images") as $imageFile) {
@@ -288,7 +291,6 @@ class ProductsController extends ApiController
             }
         }
     }
-
 
     public function edit(Request $request, $id)
     {
@@ -332,10 +334,12 @@ class ProductsController extends ApiController
                         'color' => $variant->color,
                         'color_name' => $variant->color_name,
                         'sizes' => $variant->sizes->map(function ($size) {
+                             Log::info($size->pivot);
                             return [
                                 'id' => $size->id,
                                 'size_title' => $size->size_title,
-                                'price' => $size->pivot->price // Include price from pivot table
+                                'price' => $size->pivot->price, // Include price from pivot table
+                                'stock'=> $size->pivot->stock,
                             ];
                         }),
                         'images' => $variant->images->map(function ($image) {
@@ -387,9 +391,10 @@ class ProductsController extends ApiController
                     'variants.*.id'             => 'nullable|exists:product_variants,id',
                     'variants.*.color'          => 'required|string',
                     'variants.*.color_name'     => 'required|string',
-        'variants.*.sizes' => 'nullable|array',
-        'variants.*.sizes.*.id' => 'required|exists:sizes,id',
-        'variants.*.sizes.*.price' => 'required|numeric|min:0',
+                    'variants.*.sizes' => 'nullable|array',
+                    'variants.*.sizes.*.id' => 'required|exists:sizes,id',
+                    'variants.*.sizes.*.price' => 'required|numeric|min:0',
+                    'variants.*.sizes.*.stock' => 'required|integer|min:0',
                     'variants.*.new_images'     => 'nullable|array',
                     'variants.*.new_images.*'   => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                     'variants.*.deleted_images' => 'nullable|array',
@@ -475,12 +480,15 @@ class ProductsController extends ApiController
                         'color_name' => $variantData['color_name'],
                     ]);
 
-        // Sync sizes with pivot prices
-        $syncData = [];
-        foreach ($variantData['sizes'] as $size) {
-            $syncData[$size['id']] = ['price' => $size['price']];
-        }
-        $variant->sizes()->sync($syncData);
+                    // Sync sizes with pivot prices AND stock
+                    $syncData = [];
+                    foreach ($variantData['sizes'] as $size) {
+                        $syncData[$size['id']] = [
+                            'price' => $size['price'],
+                            'stock' => $size['stock'] ?? 0, // Add stock here
+                        ];
+                    }
+                    $variant->sizes()->sync($syncData);
 
                     // Delete marked images
                     if (!empty($variantData['deleted_images'])) {
@@ -623,89 +631,87 @@ class ProductsController extends ApiController
     }
 
     // In your Controller
-public function fetchProducts(Request $request)
-{
-    try {
-        $query = Products::with(['category', 'variants.images'])
-            ->where('status', 'active');
+    public function fetchProducts(Request $request)
+    {
+        try {
+            $query = Products::with(['category', 'variants.images'])
+                ->where('status', 'active');
 
-        // Search filter
-        if ($request->has('search') && $request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            // Search filter
+            if ($request->has('search') && $request->search) {
+                $query->where('name', 'like', '%' . $request->search . '%');
+            }
+
+            // Category filter
+            if ($request->has('category') && $request->category) {
+                $query->where('category_id', $request->category);
+            }
+
+            // Brand filter
+            if ($request->has('brand') && $request->brand) {
+                $query->where('brands_slug', $request->brand);
+            }
+
+            // Gender filter
+            if ($request->has('gender') && $request->gender) {
+                $query->where('gender', $request->gender);
+            }
+
+            // Price range filter
+            if ($request->has('min_price') && $request->min_price) {
+                $query->where('price', '>=', $request->min_price);
+            }
+            if ($request->has('max_price') && $request->max_price) {
+                $query->where('price', '<=', $request->max_price);
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+
+            $allowedSort = ['name', 'price', 'created_at', 'stock'];
+            if (in_array($sortBy, $allowedSort)) {
+                $query->orderBy($sortBy, $sortOrder);
+            }
+
+            $products = $query->paginate(12);
+
+            $formattedProducts = $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'purchase_price' => $product->purchase_price,
+                    'sku' => $product->sku,
+                    'stock' => $product->stock,
+                    'gender' => $product->gender,
+                    'status' => $product->status,
+                    'brand' => $product->brands_slug,
+                    'category' => $product->category->name ?? '',
+                    'main_image_url' => $product->main_image_name ?
+                        asset('storage/' . $product->main_image_name) : ($product->variants->first()->images->first()->image_name ??
+                            asset('images/default-product.jpg')),
+                    'variants_count' => $product->variants->count(),
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'data' => $formattedProducts,
+                'meta' => [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to fetch products',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Category filter
-        if ($request->has('category') && $request->category) {
-            $query->where('category_id', $request->category);
-        }
-
-        // Brand filter
-        if ($request->has('brand') && $request->brand) {
-            $query->where('brands_slug', $request->brand);
-        }
-
-        // Gender filter
-        if ($request->has('gender') && $request->gender) {
-            $query->where('gender', $request->gender);
-        }
-
-        // Price range filter
-        if ($request->has('min_price') && $request->min_price) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->has('max_price') && $request->max_price) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        // Sorting
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-
-        $allowedSort = ['name', 'price', 'created_at', 'stock'];
-        if (in_array($sortBy, $allowedSort)) {
-            $query->orderBy($sortBy, $sortOrder);
-        }
-
-        $products = $query->paginate(12);
-
-        $formattedProducts = $products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'price' => $product->price,
-                'purchase_price' => $product->purchase_price,
-                'sku' => $product->sku,
-                'stock' => $product->stock,
-                'gender' => $product->gender,
-                'status' => $product->status,
-                'brand' => $product->brands_slug,
-                'category' => $product->category->name ?? '',
-                'main_image_url' => $product->main_image_name ?
-                    asset('storage/' . $product->main_image_name) :
-                    ($product->variants->first()->images->first()->image_name ??
-                     asset('images/default-product.jpg')),
-                'variants_count' => $product->variants->count(),
-            ];
-        });
-
-        return response()->json([
-            'status' => true,
-            'data' => $formattedProducts,
-            'meta' => [
-                'current_page' => $products->currentPage(),
-                'last_page' => $products->lastPage(),
-                'per_page' => $products->perPage(),
-                'total' => $products->total(),
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Failed to fetch products',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 }

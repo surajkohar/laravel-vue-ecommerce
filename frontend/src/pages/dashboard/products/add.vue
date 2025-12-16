@@ -282,59 +282,74 @@
               <div class="size-selection mb-4">
                 <h5 class="mb-3">Available Sizes for {{ getColorName(activeVariant) }}</h5>
                 <div class="table-responsive">
-                  <table class="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Size</th>
-                        <th>Price (£)</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="size in sizes" :key="size.id">
-                        <td>
-                          <div class="form-check">
-                            <input
-                              class="form-check-input"
-                              type="checkbox"
-                              :id="`size-${size.id}`"
-                              :checked="isSizeSelected(activeVariant, size)"
-                              @change="toggleSize(activeVariant, size)"
-                            />
-                            <label class="form-check-label" :for="`size-${size.id}`">
-                              {{ size.size_title }}
-                            </label>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
-                            <input
-                              type="number"
-                              class="form-control"
-                              :value="getSizePrice(activeVariant, size)"
-                              @input="updateSizePrice(activeVariant, size, $event)"
-                              placeholder="0.00"
-                              min="0"
-                              step="0.01"
-                            />
-                          </div>
-                          <span v-else class="text-muted">-</span>
-                        </td>
-                        <td>
-                          <button
-                            class="btn btn-sm"
-                            :class="{
-                              'btn-outline-danger': isSizeSelected(activeVariant, size),
-                              'btn-outline-secondary': !isSizeSelected(activeVariant, size)
-                            }"
-                            @click="toggleSize(activeVariant, size)"
-                          >
-                            {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+<!-- In the size selection table -->
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Size</th>
+      <th>Price (£)</th>
+      <th>Stock</th> <!-- Add Stock column -->
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="size in sizes" :key="size.id">
+      <td>
+        <div class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            :id="`size-${size.id}`"
+            :checked="isSizeSelected(activeVariant, size)"
+            @change="toggleSize(activeVariant, size)"
+          />
+          <label class="form-check-label" :for="`size-${size.id}`">
+            {{ size.size_title }}
+          </label>
+        </div>
+      </td>
+      <td>
+        <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+          <input
+            type="number"
+            class="form-control"
+            :value="getSizePrice(activeVariant, size)"
+            @input="updateSizePrice(activeVariant, size, $event)"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <span v-else class="text-muted">-</span>
+      </td>
+      <td>
+        <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+          <input
+            type="number"
+            class="form-control"
+            :value="getSizeStock(activeVariant, size)"
+            @input="updateSizeStock(activeVariant, size, $event)"
+            placeholder="0"
+            min="0"
+          />
+        </div>
+        <span v-else class="text-muted">-</span>
+      </td>
+      <td>
+        <button
+          class="btn btn-sm"
+          :class="{
+            'btn-outline-danger': isSizeSelected(activeVariant, size),
+            'btn-outline-secondary': !isSizeSelected(activeVariant, size)
+          }"
+          @click="toggleSize(activeVariant, size)"
+        >
+          {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
                 </div>
               </div>
 
@@ -577,20 +592,43 @@ const isSizeSelected = (color, size) => {
   return variant.sizes.some(s => s.id === size.id);
 };
 
+
+
 // Update toggleSize to initialize with price
+// Helper function to get size stock
+const getSizeStock = (color, size) => {
+  const variant = product.value.variants.find((v) => v.color === color);
+  if (!variant) return 0;
+
+  const sizeObj = variant.sizes.find(s => s.id === size.id);
+  return sizeObj?.stock || 0;
+};
+
+// Update size stock
+const updateSizeStock = (color, size, event) => {
+  const variant = product.value.variants.find((v) => v.color === color);
+  if (!variant) return;
+
+  const sizeObj = variant.sizes.find(s => s.id === size.id);
+  if (sizeObj) {
+    sizeObj.stock = parseInt(event.target.value) || 0;
+  }
+}
+
+// Update toggleSize to initialize with stock
 const toggleSize = (color, size) => {
   const variant = product.value.variants.find((v) => v.color === color);
-  console.log('variant', variant);
   if (!variant) return;
 
   const sizeIndex = variant.sizes.findIndex(s => s.id === size.id);
 
   if (sizeIndex === -1) {
-    // Add new size with base price
+    // Add new size with base price and zero stock
     variant.sizes.push({
       id: size.id,
       size_title: size.size_title,
-      price: product.value.price // Initialize with base product price
+      price: product.value.price, // Initialize with base product price
+      stock: 0 // Initialize with zero stock
     });
   } else {
     // Remove size
@@ -757,6 +795,8 @@ const saveProduct = () => {
     variant.sizes.forEach((size, j) => {
       formData.append(`variants[${i}][sizes][]`, size.id);
       // Add prices separately
+      formData.append(`variants[${i}][size_stock][${size.id}]`, size.stock || 0);
+
       formData.append(`variants[${i}][size_prices][${size.id}]`, size.price);
     });
 

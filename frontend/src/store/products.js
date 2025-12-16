@@ -1,214 +1,382 @@
-import { defineStore } from 'pinia'
-import { API } from '@/utils/config'
-import axios from 'axios'
+// store/products.js
+import { defineStore } from "pinia";
+import { API } from "@/utils/config";
 
-export const useProductsStore = defineStore('products', {
+export const useProductsStore = defineStore("products", {
   state: () => ({
     products: [],
+    productDetails: {}, // Store detailed product data by ID
     featuredProducts: [],
     categories: [],
     brands: [],
-    filters: {
-      search: '',
-      category: '',
-      brand: '',
-      gender: '',
-      min_price: '',
-      max_price: '',
-      sort_by: 'created_at',
-      sort_order: 'desc'
-    },
     pagination: {
       current_page: 1,
       last_page: 1,
       per_page: 12,
-      total: 0
+      total: 0,
     },
     loading: false,
-    selectedProduct: null
+    loadingDetail: false,
+    filters: {
+      category: "",
+      brand: "",
+      min_price: "",
+      max_price: "",
+      sort_by: "newest",
+      search: "",
+    },
   }),
 
   getters: {
     hasProducts: (state) => state.products.length > 0,
-    hasFilters: (state) => {
-      return Object.values(state.filters).some(value => 
-        value !== '' && value !== null && value !== undefined
-      )
-    }
+
+    // Get product detail by ID
+    getProductDetail: (state) => (productId) => {
+      return state.productDetails[productId] || null;
+    },
+
+    // Check if product has any stock (considering variants)
+    hasProductStock: (state) => (productId) => {
+      const product = state.products.find((p) => p.id === productId);
+      if (!product) return false;
+
+      // Check product stock
+      if (product.stock > 0) return true;
+
+      // Check if we have detailed data with variants
+      const detail = state.productDetails[productId];
+      if (detail?.variants) {
+        // Check if any variant has any size with stock > 0
+        return detail.variants.some((variant) =>
+          variant.sizes.some((size) => size.stock > 0)
+        );
+      }
+
+      return product.stock > 0;
+    },
+
+    // Filtered products
+    filteredProducts: (state) => {
+      let filtered = [...state.products];
+
+      // Filter by category
+      if (state.filters.category) {
+        filtered = filtered.filter(
+          (product) => product.category_id == state.filters.category
+        );
+      }
+
+      // Filter by brand
+      if (state.filters.brand) {
+        filtered = filtered.filter(
+          (product) => product.brand_id == state.filters.brand
+        );
+      }
+
+      // Filter by price range
+      if (state.filters.min_price) {
+        filtered = filtered.filter((product) => {
+          const price = product.price || product.min_price;
+          return price >= parseFloat(state.filters.min_price);
+        });
+      }
+
+      if (state.filters.max_price) {
+        filtered = filtered.filter((product) => {
+          const price = product.price || product.max_price;
+          return price <= parseFloat(state.filters.max_price);
+        });
+      }
+
+      // Filter by search
+      if (state.filters.search) {
+        const searchTerm = state.filters.search.toLowerCase();
+        filtered = filtered.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchTerm) ||
+            product.description?.toLowerCase().includes(searchTerm) ||
+            product.sku.toLowerCase().includes(searchTerm)
+        );
+      }
+
+      // Sort products
+      switch (state.filters.sort_by) {
+        case "price_low":
+          filtered.sort(
+            (a, b) => (a.price || a.min_price) - (b.price || b.min_price)
+          );
+          break;
+        case "price_high":
+          filtered.sort(
+            (a, b) => (b.price || b.max_price) - (a.price || a.max_price)
+          );
+          break;
+        case "name_asc":
+          filtered.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case "name_desc":
+          filtered.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case "newest":
+        default:
+          filtered.sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          );
+          break;
+      }
+
+      return filtered;
+    },
   },
 
   actions: {
-    async fetchProducts(page = 1) {
-      this.loading = true
-      try {
-        // For now, use mock data - replace with actual API later
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
-        
-        // Mock data - replace with: const response = await axios.get(`${API.BACKEND_URL}/products`, { params })
-        const mockProducts = this.generateMockProducts()
-        this.products = mockProducts
-        this.pagination = {
-          current_page: page,
-          last_page: 3,
-          per_page: 12,
-          total: 36
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error)
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async fetchFeaturedProducts() {
-      try {
-        // Mock data - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 500))
-        this.featuredProducts = this.generateMockProducts().slice(0, 8)
-      } catch (error) {
-        console.error('Error fetching featured products:', error)
-      }
-    },
-
-    async fetchCategories() {
-      try {
-        // Mock data - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 300))
-        this.categories = [
-          { id: 1, name: 'Electronics', slug: 'electronics', product_count: 150 },
-          { id: 2, name: 'Clothing', slug: 'clothing', product_count: 200 },
-          { id: 3, name: 'Home & Garden', slug: 'home-garden', product_count: 120 },
-          { id: 4, name: 'Sports', slug: 'sports', product_count: 80 },
-          { id: 5, name: 'Beauty', slug: 'beauty', product_count: 90 },
-          { id: 6, name: 'Toys', slug: 'toys', product_count: 60 }
-        ]
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      }
-    },
-
-    async fetchBrands() {
-      try {
-        // Mock data - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 300))
-        this.brands = ['Nike', 'Adidas', 'Apple', 'Samsung', 'Sony', 'LG', 'Dell', 'HP']
-      } catch (error) {
-        console.error('Error fetching brands:', error)
-      }
-    },
-
-    async fetchProductById(id) {
-      try {
-        // Mock data - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 800))
-        const mockProduct = this.generateMockProductDetail(id)
-        this.selectedProduct = mockProduct
-        return mockProduct
-      } catch (error) {
-        console.error('Error fetching product:', error)
-        throw error
-      }
-    },
-
+    // Update filters
     updateFilters(newFilters) {
-      this.filters = { ...this.filters, ...newFilters }
+      this.filters = { ...this.filters, ...newFilters };
     },
 
+    // Reset all filters
     resetFilters() {
       this.filters = {
-        search: '',
-        category: '',
-        brand: '',
-        gender: '',
-        min_price: '',
-        max_price: '',
-        sort_by: 'created_at',
-        sort_order: 'desc'
-      }
+        category: "",
+        brand: "",
+        min_price: "",
+        max_price: "",
+        sort_by: "newest",
+        search: "",
+      };
     },
 
-    setPage(page) {
-      this.pagination.current_page = page
-    },
-
-    // Mock data generators - REMOVE THESE WHEN USING REAL API
-    // In the generateMockProducts method, update to clothing-specific data:
-generateMockProducts() {
-  const products = []
-  const categories = ['Men Fashion', 'Women Fashion', 'Kids Wear', 'Accessories', 'Footwear']
-  const brands = ['Nike', 'Adidas', 'Zara', 'H&M', 'Levi\'s', 'Puma', 'Gucci', 'Prada']
-  const clothingTypes = ['T-Shirt', 'Jeans', 'Dress', 'Jacket', 'Sweater', 'Shorts', 'Skirt', 'Hoodie']
-  
-  for (let i = 1; i <= 12; i++) {
-    const type = clothingTypes[Math.floor(Math.random() * clothingTypes.length)]
-    const brand = brands[Math.floor(Math.random() * brands.length)]
-    
-    products.push({
-      id: i,
-      name: `${brand} ${type} - Fashion Collection`,
-      description: `Premium quality ${type.toLowerCase()} from ${brand}. Perfect for casual wear with comfortable fabric and modern design.`,
-      price: (Math.random() * 100 + 20).toFixed(2),
-      purchase_price: (Math.random() * 150 + 30).toFixed(2),
-      sku: `FASH${1000 + i}`,
-      stock: Math.floor(Math.random() * 100),
-      gender: ['men', 'women', 'unisex'][Math.floor(Math.random() * 3)],
-      status: 'active',
-      brand: brand,
-      category: categories[Math.floor(Math.random() * categories.length)],
-      main_image_url: `https://picsum.photos/400/500?random=${i}&fashion=1`,
-      variants_count: Math.floor(Math.random() * 5) + 1
+    // FRONTEND API: Get all products for customers
+// In fetchProducts action:
+async fetchProducts(page = 1) {
+  this.loading = true
+  try {
+    const params = new URLSearchParams({
+      page: page,
+      per_page: this.pagination.per_page,
+      ...Object.fromEntries(
+        Object.entries(this.filters).filter(([_, v]) => v !== '' && v !== null)
+      )
     })
+
+    const response = await fetch(`${API.FRONTEND_URL}/products?${params}`)
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch products')
+    }
+
+    const data = await response.json()
+    
+    if (data.status && data.data) {
+      // Ensure each product has a slug
+      this.products = data.data.map(product => ({
+        ...product,
+        // Add fallback slug if missing
+        slug: product.slug || `product-${product.id}`
+      }))
+      this.updatePagination(data.meta || {})
+    }
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    throw error
+  } finally {
+    this.loading = false
   }
-  return products
 },
 
-    generateMockProductDetail(id) {
-      return {
-        id: id,
-        name: `Product ${id} - Premium Quality Item`,
-        description: `This is a detailed description of an amazing product that offers great value for money. Features include high-quality materials, excellent craftsmanship, and innovative design that sets it apart from competitors. Perfect for various uses and built to last.`,
-        price: '89.99',
-        purchase_price: '129.99',
-        sku: `SKU${1000 + id}`,
-        stock: 45,
-        gender: 'unisex',
-        status: 'active',
-        brand: 'PremiumBrand',
-        category: 'Electronics',
-        main_image_url: `https://picsum.photos/600/600?random=${id}`,
-        variants: [
-          {
-            id: 1,
-            color: '#FF0000',
-            color_name: 'Red',
-            sizes: [
-              { id: 1, size_title: 'S', price: '89.99', stock: 10 },
-              { id: 2, size_title: 'M', price: '89.99', stock: 15 },
-              { id: 3, size_title: 'L', price: '89.99', stock: 12 },
-              { id: 4, size_title: 'XL', price: '94.99', stock: 8 }
-            ],
-            images: [
-              { id: 1, image_name: 'red1.jpg', url: `https://picsum.photos/400/400?random=${id}1` },
-              { id: 2, image_name: 'red2.jpg', url: `https://picsum.photos/400/400?random=${id}2` }
-            ]
-          },
-          {
-            id: 2,
-            color: '#0000FF',
-            color_name: 'Blue',
-            sizes: [
-              { id: 5, size_title: 'S', price: '89.99', stock: 8 },
-              { id: 6, size_title: 'M', price: '89.99', stock: 20 },
-              { id: 7, size_title: 'L', price: '89.99', stock: 10 }
-            ],
-            images: [
-              { id: 3, image_name: 'blue1.jpg', url: `https://picsum.photos/400/400?random=${id}3` },
-              { id: 4, image_name: 'blue2.jpg', url: `https://picsum.photos/400/400?random=${id}4` }
-            ]
-          }
-        ]
+    // Add fetchFeaturedProducts action
+    async fetchFeaturedProducts() {
+      this.loading = true;
+      try {
+        const response = await fetch(`${API.FRONTEND_URL}/products/featured`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch featured products");
+        }
+
+        const data = await response.json();
+        if (data.status && data.data) {
+          this.featuredProducts = data.data;
+        }
+      } catch (error) {
+        console.error("Error fetching featured products:", error);
+        throw error;
+      } finally {
+        this.loading = false;
       }
-    }
-  }
-})
+    },
+
+    // FRONTEND API: Get single product details with variants
+    async fetchProductBySlug(slug) {
+      this.loadingDetail = true;
+      try {
+        const response = await fetch(`${API.FRONTEND_URL}/products/${slug}`);
+
+        if (!response.ok) {
+          throw new Error("Product not found");
+        }
+
+        const data = await response.json();
+        if (data.status && data.data) {
+          const productData = data.data;
+
+          // Store product details by ID
+          this.productDetails[productData.product.id] = productData;
+
+          return productData;
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        throw error;
+      } finally {
+        this.loadingDetail = false;
+      }
+    },
+
+    // FRONTEND API: Get product by ID (with variants)
+    async fetchProductById(id) {
+      this.loadingDetail = true;
+      try {
+        const response = await fetch(`${API.FRONTEND_URL}/products/id/${id}`);
+
+        if (!response.ok) {
+          throw new Error("Product not found");
+        }
+
+        const data = await response.json();
+        if (data.status && data.data) {
+          const productData = data.data;
+          this.productDetails[productData.id] = productData;
+          return productData;
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        throw error;
+      } finally {
+        this.loadingDetail = false;
+      }
+    },
+
+    // For fetching categories
+    async fetchCategories() {
+      try {
+        const response = await fetch(`${API.FRONTEND_URL}/categories`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status && data.data) {
+            this.categories = data.data;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    },
+
+    // For fetching brands
+    async fetchBrands() {
+      try {
+        const response = await fetch(`${API.FRONTEND_URL}/brands`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status && data.data) {
+            this.brands = data.data;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching brands:", error);
+      }
+    },
+
+    // Update pagination helper
+    updatePagination(meta) {
+      this.pagination = {
+        current_page: meta.current_page || 1,
+        last_page: meta.last_page || 1,
+        per_page: meta.per_page || 12,
+        total: meta.total || 0,
+      };
+    },
+
+    // Calculate product availability based on variants
+    calculateProductAvailability(productId) {
+      const detail = this.productDetails[productId];
+      if (!detail || !detail.variants) {
+        const product = this.products.find((p) => p.id === productId);
+        return {
+          inStock: product?.stock > 0 || false,
+          totalStock: product?.stock || 0,
+          availableColors: [],
+          availableSizes: [],
+        };
+      }
+
+      let totalStock = 0;
+      const availableColors = [];
+      const availableSizes = new Set();
+
+      detail.variants.forEach((variant) => {
+        let variantStock = 0;
+
+        variant.sizes.forEach((size) => {
+          if (size.stock > 0) {
+            variantStock += size.stock;
+            availableSizes.add(size.size_title);
+          }
+        });
+
+        if (variantStock > 0) {
+          totalStock += variantStock;
+          availableColors.push({
+            id: variant.id,
+            color: variant.color,
+            name: variant.color_name,
+            stock: variantStock,
+          });
+        }
+      });
+
+      return {
+        inStock: totalStock > 0,
+        totalStock,
+        availableColors,
+        availableSizes: Array.from(availableSizes),
+      };
+    },
+
+    // Get price range for product
+    getProductPriceRange(productId) {
+      const detail = this.productDetails[productId];
+      if (!detail || !detail.variants) {
+        const product = this.products.find((p) => p.id === productId);
+        const price = product?.price || 0;
+        return { min: price, max: price };
+      }
+
+      let minPrice = Infinity;
+      let maxPrice = 0;
+
+      detail.variants.forEach((variant) => {
+        variant.sizes.forEach((size) => {
+          const price = parseFloat(size.price);
+          if (price < minPrice) minPrice = price;
+          if (price > maxPrice) maxPrice = price;
+        });
+      });
+
+      return {
+        min: minPrice === Infinity ? 0 : minPrice,
+        max: maxPrice,
+      };
+    },
+
+    // Clear product details cache
+    clearProductDetails(productId = null) {
+      if (productId) {
+        delete this.productDetails[productId];
+      } else {
+        this.productDetails = {};
+      }
+    },
+  },
+});

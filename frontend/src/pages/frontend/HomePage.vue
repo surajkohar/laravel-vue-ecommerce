@@ -383,29 +383,41 @@ const switchTab = (tabName) => {
 }
 
 // Lifecycle
+// In HomePage.vue script section
 onMounted(async () => {
   try {
-    // Simulate loading
-    setTimeout(async () => {
-      await productsStore.fetchFeaturedProducts()
+    // Fetch featured products
+    await productsStore.fetchFeaturedProducts()
+    
+    // If no featured products endpoint, use regular products
+    if (productsStore.featuredProducts.length === 0) {
+      await productsStore.fetchProducts(1)
+      // Use first 12 products for different sections
+      featuredProducts.value = productsStore.products.slice(0, 4)
+      trendingProducts.value = productsStore.products.slice(4, 8)
+      newArrivalProducts.value = productsStore.products.slice(8, 12)
+      bestSellers.value = productsStore.products.slice(0, 6)
+    } else {
+      // Use featured products
       featuredProducts.value = productsStore.featuredProducts.slice(0, 4)
       trendingProducts.value = productsStore.featuredProducts.slice(4, 8)
       newArrivalProducts.value = productsStore.featuredProducts.slice(8, 12)
       bestSellers.value = productsStore.featuredProducts.slice(0, 6)
-      loading.value = false
-      
-      // Start auto slide
-      startAutoSlide()
-      
-      // Add tab switching event listeners
-      nextTick(() => {
-        document.querySelectorAll('.tab-button').forEach(button => {
-          button.addEventListener('click', () => {
-            switchTab(button.dataset.tab);
-          });
+    }
+    
+    loading.value = false
+    
+    // Start auto slide
+    startAutoSlide()
+    
+    // Add tab switching event listeners
+    nextTick(() => {
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+          switchTab(button.dataset.tab);
         });
       });
-    }, 1500)
+    });
   } catch (error) {
     console.error('Error loading homepage:', error)
     loading.value = false

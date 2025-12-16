@@ -282,56 +282,71 @@
               <div class="size-selection mb-4">
                 <h5 class="mb-3">Available Sizes for {{ getActiveVariant().color_name || getColorName(activeVariant) }}</h5>
                 <div class="table-responsive">
-                  <table class="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Size</th>
-                        <th>Price (£)</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="size in sizes" :key="size.id">
-                        <td>
-                          <div class="form-check">
-                            <input
-                              class="form-check-input"
-                              type="checkbox"
-                              :id="`size-${size.id}`"
-                              :checked="isSizeSelected(activeVariant, size)"
-                              @change="toggleSize(activeVariant, size)"
-                            />
-                            <label class="form-check-label" :for="`size-${size.id}`">
-                              {{ size.size_title }}
-                            </label>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
-                            <input
-  type="number"
-  class="form-control"
-  v-model.number="getSizeObject(activeVariant, size).price"
-/>
-
-                          </div>
-                          <span v-else class="text-muted">-</span>
-                        </td>
-                        <td>
-                          <button
-                            class="btn btn-sm"
-                            :class="{
-                              'btn-outline-danger': isSizeSelected(activeVariant, size),
-                              'btn-outline-secondary': !isSizeSelected(activeVariant, size)
-                            }"
-                            @click="toggleSize(activeVariant, size)"
-                          >
-                            {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Size</th>
+      <th>Price (£)</th>
+      <th>Stock</th> <!-- Add Stock column -->
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="size in sizes" :key="size.id">
+      <td>
+        <div class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            :id="`size-${size.id}`"
+            :checked="isSizeSelected(activeVariant, size)"
+            @change="toggleSize(activeVariant, size)"
+          />
+          <label class="form-check-label" :for="`size-${size.id}`">
+            {{ size.size_title }}
+          </label>
+        </div>
+      </td>
+      <td>
+        <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+          <input
+            type="number"
+            class="form-control"
+            v-model.number="getSizeObject(activeVariant, size).price"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <span v-else class="text-muted">-</span>
+      </td>
+      <td>
+        <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+          <input
+            type="number"
+            class="form-control"
+            v-model.number="getSizeObject(activeVariant, size).stock"
+            placeholder="0"
+            min="0"
+          />
+        </div>
+        <span v-else class="text-muted">-</span>
+      </td>
+      <td>
+        <button
+          class="btn btn-sm"
+          :class="{
+            'btn-outline-danger': isSizeSelected(activeVariant, size),
+            'btn-outline-secondary': !isSizeSelected(activeVariant, size)
+          }"
+          @click="toggleSize(activeVariant, size)"
+        >
+          {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
                 </div>
               </div>
 
@@ -577,7 +592,8 @@ const mapApiDataToForm = (apiData) => {
       sizes: variant.sizes.map(size => ({
         id: size.id,
         size_title: size.size_title,
-        price: parseFloat(size.price ?? 0)  // ✅ Convert string price to float
+        price: parseFloat(size.price ?? 0),  // ✅ Convert string price to float
+        stock: parseInt(size.stock ?? 0)
       })),
       existingImages: variant.images.map(img => ({
         id: img.id,
@@ -660,12 +676,15 @@ const toggleSize = (color, size) => {
 
   const index = variant.sizes.findIndex(s => s.id === size.id);
   if (index === -1) {
+    // Add new size with default price and stock
     variant.sizes.push({
       id: size.id,
       size_title: size.size_title,
-      price: product.value.price
+      price: product.value.price, // Default to product base price
+      stock: 0 // Initialize with 0 stock
     });
   } else {
+    // Remove size
     variant.sizes.splice(index, 1);
   }
 };
@@ -816,6 +835,7 @@ const updateProduct = async () => {
     variant.sizes.forEach((size, j) => {
       formData.append(`variants[${i}][sizes][${j}][id]`, size.id);
       formData.append(`variants[${i}][sizes][${j}][price]`, size.price);
+      formData.append(`variants[${i}][sizes][${j}][stock]`, size.stock || 0); // Add stock
     });
 
     // Images marked for deletion
