@@ -59,7 +59,7 @@
       </div>
       
       <!-- Add to Cart Button (prevents click propagation) -->
-      <button 
+      <!-- <button 
         class="add-to-cart-btn" 
         @click.stop="addToCartHandler"
         :disabled="!product.has_stock"
@@ -71,7 +71,7 @@
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         {{ product.has_stock ? 'Add to Cart' : 'Out of Stock' }}
-      </button>
+      </button> -->
     </div>
   </div>
 </template>
@@ -118,26 +118,47 @@ const openQuickView = () => {
 }
 
 // Add to cart handler
-const addToCartHandler = () => {
-  if (!props.product.has_stock) {
-    toast.warning(`${props.product.name} is out of stock!`)
-    return
-  }
+// const addToCartHandler = () => {
+//   if (!props.product.has_stock) {
+//     toast.warning(`${props.product.name} is out of stock!`)
+//     return
+//   }
   
-  cartStore.addToCart(props.product)
-  toast.success(`${props.product.name} added to cart!`)
+//   cartStore.addToCart(props.product)
+//   toast.success(`${props.product.name} added to cart!`)
   
-  // Emit event to parent if needed
-  emit('add-to-cart', props.product)
-}
+//   // Emit event to parent if needed
+//   emit('add-to-cart', props.product)
+// }
 
 // Toggle wishlist
-const toggleWishlist = () => {
-  const added = wishlistStore.addToWishlist(props.product)
-  if (added) {
-    toast.success(`${props.product.name} added to wishlist!`)
-  } else {
-    toast.info(`${props.product.name} removed from wishlist!`)
+// Replace the toggleWishlist function with:
+const toggleWishlist = async () => {
+  try {
+    // Prepare product data for wishlist
+    const productData = {
+      id: props.product.id,
+      name: props.product.name,
+      price: props.product.price,
+      image: props.product.main_image_url || props.product.image,
+      variant_id: props.product.variant_id || null,
+      size_id: props.product.size_id || null,
+      variant_name: props.product.variant_name || null,
+      size_title: props.product.size_title || null,
+      stock: props.product.stock || 0
+    }
+    
+    // Use toggleItem method (not addToWishlist)
+    const added = await wishlistStore.toggleItem(productData)
+    
+    if (added) {
+      toast.success(`${props.product.name} added to wishlist!`)
+    } else {
+      toast.info(`${props.product.name} removed from wishlist!`)
+    }
+  } catch (error) {
+    console.error('Error toggling wishlist:', error)
+    toast.error('Failed to update wishlist')
   }
 }
 </script>

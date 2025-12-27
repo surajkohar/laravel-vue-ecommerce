@@ -27,21 +27,24 @@
               <div class="image-badge sale" v-if="productData.product.onSale">Sale</div>
               <div class="image-badge out-of-stock" v-if="!productData.product.has_stock">Out of Stock</div>
             </div>
-<div class="image-thumbnails">
-  <!-- Main image thumbnail -->
-  <div class="thumbnail"
-       :class="{ active: selectedImage === productData.product.main_image_url }"
-       @click="selectImage(productData.product.main_image_url)">
-    <img :src="productData.product.main_image_url" :alt="productData.product.name" />
-  </div>
-  <!-- Variant images -->
-  <div v-for="(image, index) in allVariantImages" :key="index"
-       class="thumbnail"
-       :class="{ active: selectedImage === image.url }"
-       @click="selectImage(image.url)">
-    <img :src="image.url" :alt="`${productData.product.name} view ${index + 1}`" />
-  </div>
-</div>
+            <div class="image-thumbnails">
+              <!-- Main image thumbnail -->
+              <div class="thumbnail"
+                   :class="{ active: selectedImage === productData.product.main_image_url }"
+                   @click="selectMainImage">
+                <img :src="productData.product.main_image_url" :alt="productData.product.name" />
+              </div>
+              <!-- Variant images -->
+              <div v-for="(variant, variantIndex) in productData.variants" :key="variant.id">
+                <div v-for="(image, imageIndex) in variant.images" 
+                     :key="image.id"
+                     class="thumbnail"
+                     :class="{ active: selectedImage === image.url }"
+                     @click="selectVariantImage(variant, image)">
+                  <img :src="image.url" :alt="`${productData.product.name} - ${variant.color_name} view ${imageIndex + 1}`" />
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Product Info -->
@@ -58,9 +61,15 @@
 
             <div class="product-pricing">
               <div class="price-container">
-                <span class="current-price">£{{ selectedPrice || productData.product.price }}</span>
-                <span class="original-price" v-if="productData.product.originalPrice">£{{ productData.product.originalPrice }}</span>
-                <span class="discount-badge" v-if="productData.product.onSale">Save {{ calculateDiscount() }}%</span>
+                <!-- Updated: Use settingsStore.formatPrice() -->
+                <span class="current-price">{{ formatPrice(selectedPrice || productData.product.price) }}</span>
+                <!-- Updated: Use settingsStore.formatPrice() -->
+                <span class="original-price" v-if="productData.product.originalPrice">
+                  {{ formatPrice(productData.product.originalPrice) }}
+                </span>
+                <span class="discount-badge" v-if="productData.product.onSale">
+                  Save {{ calculateDiscount() }}%
+                </span>
               </div>
               <div class="vat-text">Inc. VAT</div>
             </div>
@@ -156,29 +165,39 @@
                   Add to Cart
                 </button>
                 
-                <button class="btn btn-outline wishlist-btn" @click="addToWishlist">
+                <!-- Direct Purchase Button -->
+                <button 
+                  class="btn btn-outline buy-now-btn"
+                  @click="directPurchase"
+                  :disabled="!isInStock"
+                >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M19.5 12.572L12 20L4.5 12.572C3.605 11.677 3 10.391 3 9C3 6.791 4.791 5 7 5C8.309 5 9.5 5.671 10.214 6.714L12 9L13.786 6.714C14.5 5.671 15.691 5 17 5C19.209 5 21 6.791 21 9C21 10.391 20.395 11.677 19.5 12.572Z" 
+                    <path d="M9 10L9 4L15 4L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 10H20V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V10Z" 
                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  Wishlist
+                  Buy Now
                 </button>
               </div>
             </div>
 
-            <!-- Trust Badges -->
+            <!-- Trust Badges - Updated with settings -->
             <div class="trust-badges">
               <div class="trust-item">
                 <div class="trust-icon">🚚</div>
                 <div class="trust-text">
                   <strong>Free Delivery</strong>
-                  <span>On orders over £50</span>
+                  <!-- Updated: Use settingsStore.formatPrice() -->
+                  <span v-if="settingsStore.freeShippingThreshold > 0">
+                    On orders over {{ settingsStore.formatPrice(settingsStore.freeShippingThreshold) }}
+                  </span>
+                  <span v-else>Free shipping available</span>
                 </div>
               </div>
               <div class="trust-item">
                 <div class="trust-icon">↩️</div>
                 <div class="trust-text">
-                  <strong>30-Day Returns</strong>
+                  <strong>{{ settingsStore.settings.policies?.return_days || 30 }}-Day Returns</strong>
                   <span>Money back guarantee</span>
                 </div>
               </div>
@@ -255,20 +274,12 @@
                 </div>
                 <div class="spec-item" v-if="productData.product.purchase_price">
                   <span class="spec-name">Purchase Price:</span>
-                  <span class="spec-value">£{{ productData.product.purchase_price }}</span>
+                  <!-- Updated: Use settingsStore.formatPrice() -->
+                  <span class="spec-value">{{ formatPrice(productData.product.purchase_price) }}</span>
                 </div>
                 <div class="spec-item">
                   <span class="spec-name">Stock:</span>
                   <span class="spec-value">{{ productData.product.stock }} units</span>
-                </div>
-                <!-- Add more specifications from your database if available -->
-                <div class="spec-item" v-if="productData.product.material">
-                  <span class="spec-name">Material:</span>
-                  <span class="spec-value">{{ productData.product.material }}</span>
-                </div>
-                <div class="spec-item" v-if="productData.product.certification">
-                  <span class="spec-name">Certification:</span>
-                  <span class="spec-value">{{ productData.product.certification }}</span>
                 </div>
               </div>
             </div>
@@ -299,7 +310,6 @@
                   </div>
                 </div>
                 
-                <!-- Empty reviews state -->
                 <div v-if="productReviews.length === 0" class="no-reviews">
                   <p>No reviews yet. Be the first to review this product!</p>
                   <button class="btn btn-primary">Write a Review</button>
@@ -318,6 +328,7 @@
               :key="relatedProduct.id" 
               :product="relatedProduct"
               @add-to-cart="handleAddToCart"
+              @buy-now="handleBuyNow"
             />
           </div>
         </div>
@@ -328,19 +339,20 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router' // Add router import
 import { toast } from 'vue3-toastify'
 import FrontendLayout from '@/layouts/FrontendLayout.vue'
 import ProductCard from '@/components/frontend/ProductCard.vue'
 import Loader from '@/components/frontend/Loader.vue'
 import { useProductsStore } from '@/store/products'
 import { useCartStore } from '@/store/cart'
-import { useWishlistStore } from '@/store/wishlist'
+import { useSettingsStore } from '@/store/settings' // Removed wishlist import
 
 const route = useRoute()
+const router = useRouter() // Add router
 const productsStore = useProductsStore()
 const cartStore = useCartStore()
-const wishlistStore = useWishlistStore()
+const settingsStore = useSettingsStore()
 
 const loading = ref(true)
 const productData = ref({})
@@ -356,7 +368,7 @@ const quantity = ref(1)
 const activeTab = ref('description')
 const relatedProducts = ref([])
 
-// Sample reviews data (in real app, this would come from API)
+// Sample reviews data
 const sampleReviews = [
   {
     id: 1,
@@ -374,21 +386,12 @@ const sampleReviews = [
   }
 ]
 
-// Computed properties
-const allVariantImages = computed(() => {
-  if (!productData.value.variants) return []
-  
-  const images = []
-  productData.value.variants.forEach(variant => {
-    if (variant.images && variant.images.length > 0) {
-      variant.images.forEach(image => {
-        images.push(image)
-      })
-    }
-  })
-  return images
-})
+// Helper function to format price using settings store
+const formatPrice = (amount) => {
+  return settingsStore.formatPrice(amount)
+}
 
+// Computed properties
 const selectedVariantStock = computed(() => {
   if (!selectedVariant.value.size) return 0
   return selectedVariant.value.size.stock || 0
@@ -410,28 +413,22 @@ const selectedPrice = computed(() => {
 })
 
 const productRating = computed(() => {
-  // For now, use average of sample reviews
-  // In real app, fetch from API
   if (productReviews.value.length === 0) return 4.5
   const total = productReviews.value.reduce((sum, review) => sum + review.rating, 0)
   return total / productReviews.value.length
 })
 
 const productReviews = computed(() => {
-  // For now, use sample reviews
-  // In real app, fetch from API
   return sampleReviews
 })
 
 const productDescription = computed(() => {
   if (!productData.value.product?.description) return ''
-  // Strip HTML tags for short description
   return productData.value.product.description.replace(/<[^>]*>/g, '').substring(0, 150) + '...'
 })
 
 const productFullDescription = computed(() => {
   if (!productData.value.product?.description) return ''
-  // Strip HTML tags and clean up
   let desc = productData.value.product.description.replace(/<[^>]*>/g, ' ')
   desc = desc.replace(/\s+/g, ' ').trim()
   return desc
@@ -441,15 +438,11 @@ const productFeatures = computed(() => {
   const features = []
   const description = productData.value.product?.description || ''
   
-  // Extract features from description
   const featureKeywords = [
-    { keyword: 'waterproof', text: 'Waterproof' },
-    { keyword: 'breathable', text: 'Breathable fabric' },
-    { keyword: 'reinforced', text: 'Reinforced stitching' },
-    { keyword: 'pocket', text: 'Multiple pockets' },
-    { keyword: 'durable', text: 'Durable construction' },
-    { keyword: 'comfort', text: 'Comfortable fit' },
-    { keyword: 'adjustable', text: 'Adjustable features' }
+    { keyword: 'fabric', text: 'Quality Fabric' },
+    { keyword: 'cotton', text: 'Mixed Cotton' },
+    { keyword: 'durable', text: 'Durable Construction' },
+    { keyword: 'comfort', text: 'Comfortable Fit' }
   ]
   
   featureKeywords.forEach(feature => {
@@ -487,6 +480,9 @@ const selectVariant = (variant) => {
   // Set first variant image as selected if available
   if (variant.images && variant.images.length > 0) {
     selectedImage.value = variant.images[0].url
+  } else {
+    // Fallback to main product image
+    selectedImage.value = productData.value.product.main_image_url
   }
 }
 
@@ -502,6 +498,17 @@ const selectSize = (size) => {
   // Reset quantity if exceeds available stock
   if (quantity.value > size.stock) {
     quantity.value = size.stock
+  }
+}
+
+const selectMainImage = () => {
+  selectedImage.value = productData.value.product.main_image_url
+}
+
+const selectVariantImage = (variant, image) => {
+  selectedImage.value = image.url
+  if (selectedVariant.value.variantId !== variant.id) {
+    selectVariant(variant)
   }
 }
 
@@ -524,48 +531,13 @@ const calculateDiscount = () => {
   return Math.round(discount)
 }
 
-// Computed property to map images to their variants
-const imageVariantMap = computed(() => {
-  const map = new Map();
-  
-  if (!productData.value.variants) return map;
-  
-  productData.value.variants.forEach(variant => {
-    if (variant.images && variant.images.length > 0) {
-      variant.images.forEach(image => {
-        map.set(image.url, variant.id);
-      });
-    }
-  });
-  
-  // Also map the main image to the first variant or handle separately
-  if (productData.value.product && productData.value.variants.length > 0) {
-    map.set(productData.value.product.main_image_url, productData.value.variants[0].id);
-  }
-  
-  return map;
-});
-
-// Updated method when clicking on thumbnails
-const selectImage = (imageUrl) => {
-  selectedImage.value = imageUrl;
-  
-  // Find which variant this image belongs to
-  const variantId = imageVariantMap.value.get(imageUrl);
-  if (variantId) {
-    const variant = productData.value.variants.find(v => v.id === variantId);
-    if (variant && variant.has_stock) {
-      selectVariant(variant);
-    }
-  }
-};
-
 const addToCart = () => {
   if (!isInStock.value) {
     toast.error('This product is out of stock!')
     return
   }
 
+  // Prepare cart item object
   const cartItem = {
     id: productData.value.product.id,
     name: productData.value.product.name,
@@ -574,34 +546,57 @@ const addToCart = () => {
     quantity: quantity.value,
     variant_id: selectedVariant.value.variantId,
     variant_name: selectedVariant.value.variant?.color_name || null,
-    size: selectedVariant.value.size?.size_title || null,
+    size_id: selectedVariant.value.size?.id || null,
+    size_title: selectedVariant.value.size?.size_title || null,
     stock: selectedVariantStock.value
   }
 
-  cartStore.addToCart(cartItem)
+  console.log('🛒 Adding to cart:', cartItem)
+  
+  // Add to cart using the store's method with proper parameters
+  cartStore.addToCart(
+    productData.value.product,  // product object
+    quantity.value,             // quantity
+    selectedVariant.value.variant, // variant object
+    selectedVariant.value.size     // size object
+  )
+  
   toast.success(`${productData.value.product.name} added to cart!`)
   
   // Reset quantity
   quantity.value = 1
 }
 
-const addToWishlist = () => {
-  if (!productData.value.product) return
-  
-  const added = wishlistStore.addToWishlist({
-    id: productData.value.product.id,
-    name: productData.value.product.name,
-    price: productData.value.product.price,
-    image: productData.value.product.main_image_url,
-    category: productData.value.product.category_title,
-    brand: productData.value.product.brand_title,
-    stock: productData.value.product.stock
-  })
-  
-  if (added) {
-    toast.success(`${productData.value.product.name} added to wishlist!`)
-  } else {
-    toast.info(`${productData.value.product.name} removed from wishlist!`)
+// Direct purchase function
+const directPurchase = async () => {
+  if (!isInStock.value) {
+    toast.error('This product is out of stock!')
+    return
+  }
+
+  try {
+    // Prepare product data for direct checkout
+    const productDataForCheckout = {
+      product_id: productData.value.product.id,
+      quantity: quantity.value,
+      variant_id: selectedVariant.value.variantId || null,
+      size_id: selectedVariant.value.sizeId || null,
+      price: selectedPrice.value,
+      name: productData.value.product.name,
+      image: selectedImage.value || productData.value.product.main_image_url,
+      variant_name: selectedVariant.value.variant?.color_name || null,
+      size_title: selectedVariant.value.size?.size_title || null
+    }
+
+    // Store the product data for direct checkout
+    sessionStorage.setItem('direct_checkout_product', JSON.stringify(productDataForCheckout))
+    
+    // Navigate to checkout page
+    router.push('/checkout?type=direct')
+    
+  } catch (error) {
+    console.error('Error initiating direct purchase:', error)
+    toast.error('Failed to process direct purchase')
   }
 }
 
@@ -616,6 +611,12 @@ const handleAddToCart = (product) => {
   toast.success(`${product.name} added to cart!`)
 }
 
+// Handle Buy Now from related products
+const handleBuyNow = (product) => {
+  // For related products, we need to fetch the full product details first
+  router.push(`/products/${product.slug || product.id}`)
+}
+
 const fetchProduct = async () => {
   loading.value = true
   try {
@@ -625,7 +626,6 @@ const fetchProduct = async () => {
     let data
     
     if (slug) {
-      // Check if slug is actually an ID (like "product-13")
       if (slug.startsWith('product-')) {
         const productId = slug.replace('product-', '')
         data = await productsStore.fetchProductById(productId)
@@ -669,15 +669,53 @@ watch(() => route.params.id, () => {
   fetchProduct()
 })
 
-// Lifecycle
-onMounted(() => {
+// Lifecycle - Ensure settings are loaded
+onMounted(async () => {
+  // Load settings if not already loaded
+  if (!settingsStore.isLoaded && !settingsStore.isLoading) {
+    await settingsStore.fetchSettings()
+  }
+  
   fetchProduct()
 })
 </script>
 
 <style scoped>
-/* ALL YOUR PREVIOUS CSS STYLES REMAIN EXACTLY THE SAME */
-/* I'm including the complete CSS from your previous version */
+/* Add styles for Buy Now button */
+.buy-now-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  border: none;
+}
+
+.buy-now-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: translateY(-1px);
+}
+
+.buy-now-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.add-to-cart-btn,
+.buy-now-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
 
 .product-detail {
   padding: 2rem 0 4rem;

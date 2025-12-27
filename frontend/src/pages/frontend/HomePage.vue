@@ -241,7 +241,6 @@
       v-if="quickViewProduct"
       :product="quickViewProduct"
       @close="quickViewProduct = null"
-      @add-to-cart="handleAddToCart"
     />
   </FrontendLayout>
 </template>

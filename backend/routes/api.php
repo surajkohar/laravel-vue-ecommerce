@@ -1,14 +1,14 @@
 <?php
 
-use App\Http\Controllers\Admin\Products\BrandsController;
-use App\Http\Controllers\Admin\Products\ProductCategoriesController;
-use App\Http\Controllers\Admin\SizeController;
+use App\Http\Controllers\Frontend\CheckoutController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Frontend\BrandController;
+use App\Http\Controllers\Frontend\CartsController;
 use App\Http\Controllers\Frontend\CategoryController;
 use App\Http\Controllers\Frontend\ProductsController as FrontendProductsController;
+use App\Http\Controllers\Frontend\SettingsController;
 use App\Http\Controllers\Frontend\WishlistController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
@@ -54,15 +54,14 @@ Route::middleware('auth:sanctum')->group(function () {
     require_once __DIR__ . '/sizes.php';
     require_once __DIR__ . '/brands.php';
     require_once __DIR__ . '/emails.php';
-
-
-
 });
 
 // Route::get('/homepage/fetch-products', [ProductsController::class, 'fetchProducts']);
 
 // ==================== FRONTEND ROUTES (Customer) ====================
 Route::prefix('frontend')->group(function () {
+    Route::get('/settings', [SettingsController::class, 'getFrontendSettings']);
+
     // Public routes (no authentication required)
     Route::get('/products', [FrontendProductsController::class, 'index']);
     Route::get('/products/featured', [FrontendProductsController::class, 'featured']);
@@ -79,10 +78,35 @@ Route::prefix('frontend')->group(function () {
     Route::get('/brands', [BrandController::class, 'index']);
     Route::get('/brands/{slug}/products', [BrandController::class, 'products']);
 
-    // Wishlist (requires authentication)
+    // Stripe webhook (no auth required)
+    Route::post('/stripe/webhook', [CheckoutController::class, 'stripeWebhook']);
+
+    //authenticated routes
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/wishlist/add', [WishlistController::class, 'add']);
+
+        // Wishlist routes
         Route::get('/wishlist', [WishlistController::class, 'index']);
+        Route::post('/wishlist/add', [WishlistController::class, 'add']);
+        Route::get('/wishlist/check', [WishlistController::class, 'check']);
         Route::delete('/wishlist/{id}', [WishlistController::class, 'remove']);
+        Route::delete('/wishlist/clear', [WishlistController::class, 'clear']);
+        Route::post('/wishlist/move-to-cart/{id}', [WishlistController::class, 'moveToCart']);
+
+        // Cart routes
+        Route::get('/cart', [CartsController::class, 'index']);
+        Route::post('/cart/add', [CartsController::class, 'add']);
+        Route::put('/cart/update/{id}', [CartsController::class, 'update']);
+        Route::delete('/cart/remove/{id}', [CartsController::class, 'remove']);
+        Route::post('/cart/clear', [CartsController::class, 'clear']);
+        Route::post('/cart/merge', [CartsController::class, 'merge']);
+
+        // ========== CHECKOUT ROUTES ==========
+        Route::get('/checkout/config', [CheckoutController::class, 'getPaymentConfig']);
+        Route::post('/checkout/create-payment-intent', [CheckoutController::class, 'createPaymentIntent']);
+        Route::post('/checkout/cart', [CheckoutController::class, 'cartCheckout']);
+        Route::post('/checkout/direct', [CheckoutController::class, 'directCheckout']);
+        Route::get('/orders', [CheckoutController::class, 'getUserOrders']);
+        Route::get('/orders/{order_number}', [CheckoutController::class, 'getOrder']);
+        Route::post('/orders/{orderId}/complete', [CheckoutController::class, 'completeOrderWithoutPayment']);
     });
 });

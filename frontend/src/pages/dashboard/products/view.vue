@@ -33,11 +33,11 @@
               <div class="product-price-section">
                 <div class="price-row">
                   <span class="price-label">Selling Price:</span>
-                  <span class="price-value">£{{ product.price }}</span>
+                  <span class="price-value">{{ currencySymbol }}{{ product.price }}</span>
                 </div>
                 <div class="price-row">
                   <span class="price-label">Purchase Price:</span>
-                  <span class="price-value">£{{ product.purchase_price }}</span>
+                  <span class="price-value">{{ currencySymbol }}{{ product.purchase_price }}</span>
                 </div>
                 <div class="price-row">
                   <span class="price-label">Stock:</span>
@@ -87,7 +87,7 @@
                       <span class="sizes-label">Available Sizes:</span>
                       <div class="size-tags">
                         <span v-for="size in variant.sizes" :key="size.id" class="size-tag">
-                          {{ size.size_title }} - £{{ size.price }}
+                          {{ size.size_title }} - {{ currencySymbol }}{{ size.price }}
                         </span>
                       </div>
                     </div>
@@ -185,6 +185,7 @@ import { API } from '@/utils/config';
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
+const currencySymbol = ref('');
 const product = ref({
   id: null,
   name: '',
@@ -222,7 +223,7 @@ const fetchProduct = async () => {
 
     const data = await response.json();
     product.value = data.data.product;
-
+    currencySymbol.value = data.currencySymbol || '₹';
     // Safely check if variants exist before accessing
     if (Array.isArray(data.data.variants)) {
       product.value.variants = data.data.variants;

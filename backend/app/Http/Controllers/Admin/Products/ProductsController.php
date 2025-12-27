@@ -62,8 +62,6 @@ class ProductsController extends ApiController
                 $where[] = ['products.created <= ?', [date('Y-m-d 23:59:59', strtotime($createdTo))]];
             }
 
-            Log::info($request->all());
-
             $categoryIds = $request->get('category');
             if (!empty($categoryIds)) {
                 $categoryIds = is_string($categoryIds) ? explode(',', $categoryIds) : $categoryIds;
@@ -87,7 +85,8 @@ class ProductsController extends ApiController
 
             return response()->json([
                 'status' => true,
-                'page' => $listing
+                'page' => $listing,
+                'currencySymbol' => Settings::get('currency_symbol'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -164,6 +163,7 @@ class ProductsController extends ApiController
             return response()->json([
                 'status' => true,
                 'data' => $response,
+                'currencySymbol' => Settings::get('currency_symbol'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -626,7 +626,8 @@ class ProductsController extends ApiController
             'subCategory' => $subCategory,
             'brands' => $brands,
             'sizes' => $sizes,
-            'colors' => $colors ?? ''
+            'colors' => $colors ?? '',
+            'currencySymbol' => Settings::get('currency_symbol'),
         ]);
     }
 

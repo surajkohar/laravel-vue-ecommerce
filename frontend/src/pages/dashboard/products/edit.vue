@@ -20,66 +20,39 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">Gender</label>
-                <Select
-                  placeholder="Select gender"
-                  v-model="product.gender"
-                  :options="genders"
-                  option-label="title"
-                  option-value="slug"
-                />
+                <Select placeholder="Select gender" v-model="product.gender" :options="genders" option-label="title"
+                  option-value="slug" />
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">Category</label>
-                <Select
-                  v-model="product.category_id"
-                  placeholder="Select Category"
-                  :options="categories"
-                  option-label="title"
-                  option-value="id"
-                  @update:modelValue="filterSubCategory"
-                />
+                <Select v-model="product.category_id" placeholder="Select Category" :options="categories"
+                  option-label="title" option-value="id" @update:modelValue="filterSubCategory" />
               </div>
             </div>
-            
+
             <div class="col-12">
               <div class="form-group">
                 <label class="form-label">Title</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="product.name"
-                  placeholder="Enter product name"
-                />
+                <input type="text" class="form-control" v-model="product.name" placeholder="Enter product name" />
               </div>
             </div>
-            
+
             <div class="col-12">
               <div class="form-group">
                 <label class="form-label">Description</label>
-                <QuillEditor
-                  v-model:content="product.description"
-                  contentType="html"
-                  theme="snow"
-                  :options="editorOptions"
-                  placeholder="Enter product description"
-                />
+                <QuillEditor v-model:content="product.description" contentType="html" theme="snow"
+                  :options="editorOptions" placeholder="Enter product description" />
               </div>
             </div>
-            
+
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">Purchase Price</label>
                 <div class="input-group">
-                  <input
-                    type="number"
-                    class="form-control"
-                    v-model.number="product.purchasePrice"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
+                  <input type="number" class="form-control" v-model.number="product.purchasePrice" placeholder="0.00"
+                    min="0" step="0.01" />
                 </div>
               </div>
             </div>
@@ -87,116 +60,73 @@
               <div class="form-group">
                 <label class="form-label">Selling Price</label>
                 <div class="input-group">
-                  <input
-                    type="number"
-                    class="form-control"
-                    v-model.number="product.price"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
+                  <input type="number" class="form-control" v-model.number="product.price" placeholder="0.00" min="0"
+                    step="0.01" />
                 </div>
               </div>
             </div>
-            
+
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">Sub Categories</label>
-                <MultiSelect
-                  v-model="product.subcategory_ids"
-                  :options="filteredSubCategories"
-                  placeholder="Select subcategories"
-                  option-label="title"
-                  option-value="id"
-                />
+                <MultiSelect v-model="product.subcategory_ids" :options="filteredSubCategories"
+                  placeholder="Select subcategories" option-label="title" option-value="id" />
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">Brand</label>
-                <Select
-                  v-model="product.brand"
-                  placeholder="Select brand"
-                  :options="brands"
-                  option-label="title"
-                  option-value="slug"
-                />
+                <Select v-model="product.brand" placeholder="Select brand" :options="brands" option-label="title"
+                  option-value="slug" />
               </div>
             </div>
-            
+
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">SKU</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="product.sku"
-                  placeholder="Product SKU"
-                />
+                <input type="text" class="form-control" v-model="product.sku" placeholder="Product SKU" />
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label">Stock Quantity</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  v-model.number="product.stock"
-                  placeholder="Total stock"
-                  min="0"
-                />
+                <input type="number" class="form-control" v-model.number="product.stock" placeholder="Total stock"
+                  min="0" />
               </div>
             </div>
-            
+
             <div class="col-12">
               <div class="form-group">
                 <label class="form-label">Main Product Image</label>
                 <div class="image-uploader">
-                  <div 
-                    class="upload-area" 
-                    @click="triggerMainImageUpload"
-                    :class="{ 'has-image': product.mainImageUrl || product.mainImageFile }"
-                  >
+                  <div class="upload-area" @click="triggerMainImageUpload"
+                    :class="{ 'has-image': product.mainImageUrl || product.mainImageFile }">
                     <template v-if="!product.mainImageFile && !product.mainImageUrl">
                       <i class="fas fa-cloud-upload-alt fa-3x"></i>
                       <p>Click to upload main product image</p>
                       <small class="text-muted">Recommended size: 580×630px</small>
                     </template>
                     <template v-else>
-                      <img
-                        :src="product.mainImageFile ? product.mainImageFile.preview : product.mainImageUrl"
-                        alt="Main product image preview"
-                        class="main-image-preview"
-                      />
+                      <img :src="product.mainImageFile ? product.mainImageFile.preview : product.mainImageUrl"
+                        alt="Main product image preview" class="main-image-preview" />
                     </template>
-                    <input
-                      type="file"
-                      ref="mainImageInput"
-                      @change="handleMainImageUpload"
-                      accept="image/*"
-                      style="display: none"
-                    />
+                    <input type="file" ref="mainImageInput" @change="handleMainImageUpload" accept="image/*"
+                      style="display: none" />
                   </div>
-                  <button
-                    v-if="product.mainImageUrl || product.mainImageFile"
-                    class="btn btn-danger btn-sm mt-2"
-                    @click="removeMainImage"
-                  >
+                  <button v-if="product.mainImageUrl || product.mainImageFile" class="btn btn-danger btn-sm mt-2"
+                    @click="removeMainImage">
                     <i class="fas fa-trash"></i> Remove Image
                   </button>
                 </div>
               </div>
             </div>
-            
+
             <div class="col-12">
               <div class="form-group">
                 <label class="form-label">Size Guide (PDF)</label>
                 <div class="file-uploader">
-                  <div 
-                    class="upload-area" 
-                    @click="triggerSizeGuideUpload"
-                    :class="{ 'has-file': product.sizeGuideUrl || product.sizeGuideFile }"
-                  >
+                  <div class="upload-area" @click="triggerSizeGuideUpload"
+                    :class="{ 'has-file': product.sizeGuideUrl || product.sizeGuideFile }">
                     <template v-if="!product.sizeGuideFile && !product.sizeGuideUrl">
                       <i class="fas fa-file-pdf fa-3x"></i>
                       <p>Click to upload size guide (PDF)</p>
@@ -204,21 +134,14 @@
                     </template>
                     <template v-else>
                       <i class="fas fa-file-pdf fa-3x"></i>
-                      <p class="file-name">{{ product.sizeGuideFile ? product.sizeGuideFile.name : product.sizeGuideName }}</p>
+                      <p class="file-name">{{ product.sizeGuideFile ? product.sizeGuideFile.name : product.sizeGuideName
+                        }}</p>
                     </template>
-                    <input
-                      type="file"
-                      ref="sizeGuideInput"
-                      @change="handleSizeGuideUpload"
-                      accept=".pdf"
-                      style="display: none"
-                    />
+                    <input type="file" ref="sizeGuideInput" @change="handleSizeGuideUpload" accept=".pdf"
+                      style="display: none" />
                   </div>
-                  <button
-                    v-if="product.sizeGuideUrl || product.sizeGuideFile"
-                    class="btn btn-danger btn-sm mt-2"
-                    @click="removeSizeGuide"
-                  >
+                  <button v-if="product.sizeGuideUrl || product.sizeGuideFile" class="btn btn-danger btn-sm mt-2"
+                    @click="removeSizeGuide">
                     <i class="fas fa-trash"></i> Remove File
                   </button>
                 </div>
@@ -235,15 +158,9 @@
             <div class="color-selection mb-4">
               <label class="form-label">Select Colors:</label>
               <div class="color-palette">
-                <div
-                  v-for="color in availableColors"
-                  :key="color.hex"
-                  class="color-option"
-                  :class="{ selected: isColorSelected(color.hex) }"
-                  :style="{ backgroundColor: color.hex }"
-                  @click="toggleColor(color)"
-                  :title="color.name"
-                >
+                <div v-for="color in availableColors" :key="color.hex" class="color-option"
+                  :class="{ selected: isColorSelected(color.hex) }" :style="{ backgroundColor: color.hex }"
+                  @click="toggleColor(color)" :title="color.name">
                   <span v-if="isColorSelected(color.hex)" class="checkmark">
                     <i class="fas fa-check"></i>
                   </span>
@@ -254,24 +171,12 @@
             <!-- Variant Details Tabs -->
             <div class="variant-tabs mb-3" v-if="product.variants.length > 0">
               <div class="nav nav-pills">
-                <button
-                  v-for="variant in product.variants"
-                  :key="variant.color"
-                  class="nav-link"
-                  :class="{ active: activeVariant === variant.color }"
-                  @click="setActiveVariant(variant.color)"
-                >
-                  <span
-                    class="color-swatch"
-                    :style="{ backgroundColor: variant.color }"
-                  ></span>
+                <button v-for="variant in product.variants" :key="variant.color" class="nav-link"
+                  :class="{ active: activeVariant === variant.color }" @click="setActiveVariant(variant.color)">
+                  <span class="color-swatch" :style="{ backgroundColor: variant.color }"></span>
                   {{ variant.color_name || getColorName(variant.color) }}
-                  <button
-                    class="btn-close ms-2"
-                    style="filter: invert(0); opacity: 0.7;"
-                    @click.stop="removeVariant(variant.color)"
-                    aria-label="Remove color"
-                  ></button>
+                  <button class="btn-close ms-2" style="filter: invert(0); opacity: 0.7;"
+                    @click.stop="removeVariant(variant.color)" aria-label="Remove color"></button>
                 </button>
               </div>
             </div>
@@ -280,73 +185,56 @@
             <div class="variant-details" v-if="activeVariant">
               <!-- Size Selection -->
               <div class="size-selection mb-4">
-                <h5 class="mb-3">Available Sizes for {{ getActiveVariant().color_name || getColorName(activeVariant) }}</h5>
+                <h5 class="mb-3">Available Sizes for {{ getActiveVariant().color_name || getColorName(activeVariant) }}
+                </h5>
                 <div class="table-responsive">
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>Size</th>
-      <th>Price (£)</th>
-      <th>Stock</th> <!-- Add Stock column -->
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="size in sizes" :key="size.id">
-      <td>
-        <div class="form-check">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            :id="`size-${size.id}`"
-            :checked="isSizeSelected(activeVariant, size)"
-            @change="toggleSize(activeVariant, size)"
-          />
-          <label class="form-check-label" :for="`size-${size.id}`">
-            {{ size.size_title }}
-          </label>
-        </div>
-      </td>
-      <td>
-        <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
-          <input
-            type="number"
-            class="form-control"
-            v-model.number="getSizeObject(activeVariant, size).price"
-            placeholder="0.00"
-            min="0"
-            step="0.01"
-          />
-        </div>
-        <span v-else class="text-muted">-</span>
-      </td>
-      <td>
-        <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
-          <input
-            type="number"
-            class="form-control"
-            v-model.number="getSizeObject(activeVariant, size).stock"
-            placeholder="0"
-            min="0"
-          />
-        </div>
-        <span v-else class="text-muted">-</span>
-      </td>
-      <td>
-        <button
-          class="btn btn-sm"
-          :class="{
-            'btn-outline-danger': isSizeSelected(activeVariant, size),
-            'btn-outline-secondary': !isSizeSelected(activeVariant, size)
-          }"
-          @click="toggleSize(activeVariant, size)"
-        >
-          {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
-        </button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Size</th>
+                        <th>Price ({{ currencySymbol }})</th>
+                        <th>Stock</th> <!-- Add Stock column -->
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="size in sizes" :key="size.id">
+                        <td>
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" :id="`size-${size.id}`"
+                              :checked="isSizeSelected(activeVariant, size)"
+                              @change="toggleSize(activeVariant, size)" />
+                            <label class="form-check-label" :for="`size-${size.id}`">
+                              {{ size.size_title }}
+                            </label>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+                            <input type="number" class="form-control"
+                              v-model.number="getSizeObject(activeVariant, size).price" placeholder="0.00" min="0"
+                              step="0.01" />
+                          </div>
+                          <span v-else class="text-muted">-</span>
+                        </td>
+                        <td>
+                          <div class="input-group" v-if="isSizeSelected(activeVariant, size)">
+                            <input type="number" class="form-control"
+                              v-model.number="getSizeObject(activeVariant, size).stock" placeholder="0" min="0" />
+                          </div>
+                          <span v-else class="text-muted">-</span>
+                        </td>
+                        <td>
+                          <button class="btn btn-sm" :class="{
+                            'btn-outline-danger': isSizeSelected(activeVariant, size),
+                            'btn-outline-secondary': !isSizeSelected(activeVariant, size)
+                          }" @click="toggleSize(activeVariant, size)">
+                            {{ isSizeSelected(activeVariant, size) ? 'Remove' : 'Add' }}
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -358,44 +246,27 @@
                     <i class="fas fa-images fa-3x"></i>
                     <p>Click to upload images</p>
                     <small class="text-muted">Recommended size: 580×630px</small>
-                    <input
-                      type="file"
-                      ref="fileInput"
-                      @change="handleFileUpload"
-                      multiple
-                      accept="image/*"
-                      style="display: none"
-                    />
+                    <input type="file" ref="fileInput" @change="handleFileUpload" multiple accept="image/*"
+                      style="display: none" />
                   </div>
-                  
+
                   <div class="image-previews mt-3">
                     <!-- Existing images -->
-                    <div
-                      v-for="(image, index) in getActiveVariant().existingImages"
-                      :key="'existing-' + index"
-                      class="image-preview"
-                    >
+                    <div v-for="(image, index) in getActiveVariant().existingImages" :key="'existing-' + index"
+                      class="image-preview">
                       <img :src="image.url" :alt="`Preview ${index + 1}`" />
-                      <button
-                        class="btn btn-danger btn-sm remove-image"
-                        @click="markImageForDeletion(getActiveVariant(), index)"
-                      >
+                      <button class="btn btn-danger btn-sm remove-image"
+                        @click="markImageForDeletion(getActiveVariant(), index)">
                         <i class="fas fa-times"></i>
                       </button>
                       <span v-if="image.markedForDeletion" class="deleted-badge">Deleted</span>
                     </div>
-                    
+
                     <!-- New images -->
-                    <div
-                      v-for="(image, index) in getActiveVariant().newImages"
-                      :key="'new-' + index"
-                      class="image-preview"
-                    >
+                    <div v-for="(image, index) in getActiveVariant().newImages" :key="'new-' + index"
+                      class="image-preview">
                       <img :src="image.preview" :alt="`Preview ${index + 1}`" />
-                      <button
-                        class="btn btn-danger btn-sm remove-image"
-                        @click="removeNewImage(activeVariant, index)"
-                      >
+                      <button class="btn btn-danger btn-sm remove-image" @click="removeNewImage(activeVariant, index)">
                         <i class="fas fa-times"></i>
                       </button>
                     </div>
@@ -453,6 +324,7 @@ const brands = ref([]);
 const sizes = ref([]);
 const availableColors = ref([]);
 const token = localStorage.getItem('auth_token');
+const currencySymbol = ref('');
 
 const genders = [
   { id: '1', slug: 'men', title: 'Men' },
@@ -534,6 +406,7 @@ const fetchData = async () => {
       hex: c.color_code,
       name: c.title,
     }));
+    currencySymbol.value = data.currencySymbol || '₹';
   } catch (err) {
     console.error('Error fetching categories:', err);
     toast.error('Failed to load product data');
@@ -1137,11 +1010,11 @@ const goBack = () => {
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .card-body {
     padding: 20px;
   }
-  
+
   .image-previews {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   }

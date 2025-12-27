@@ -483,12 +483,16 @@ const formatDate = (dateString) => {
 
 const addToCart = async (item) => {
   try {
+    // Pass the correct data structure
     await cartStore.addToCart({
-      product_id: item.id,
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image: item.image || item.main_image_url,
       quantity: 1,
-      product: item
+      stock: item.stock
     })
-    // Show success message
+    // Show success message (you can use toast here)
   } catch (error) {
     console.error('Error adding to cart:', error)
   }
@@ -581,7 +585,7 @@ const shareWishlist = () => {
 
 // Lifecycle
 onMounted(() => {
-  wishlistStore.hydrate()
+  wishlistStore.loadWishlist()
 })
 </script>
 

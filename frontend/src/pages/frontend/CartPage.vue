@@ -24,179 +24,180 @@
                   Clear Cart
                 </button>
               </div>
-              
+
               <div class="cart-items">
-                <div v-for="item in cartStore.items" :key="`${item.id}-${item.variant_id}`" class="cart-item">
+                <div v-for="item in cartStore.items" :key="`${item.id}-${item.variant_id}-${item.size_id}`"
+                  class="cart-item">
                   <div class="item-image">
                     <img :src="item.image" :alt="item.name" />
                     <div class="item-badge" v-if="item.quantity > 1">{{ item.quantity }}</div>
                   </div>
-                  
+
                   <div class="item-details">
                     <h3 class="item-name">{{ item.name }}</h3>
                     <div class="item-variants">
-                      <span class="variant" v-if="item.variant_name">{{ item.variant_name }}</span>
-                      <span class="variant" v-if="item.size">Size: {{ item.size }}</span>
+                      <span class="variant" v-if="item.variant_name">Color: {{ item.variant_name }}</span>
+                      <span class="variant" v-if="item.size_title">Size: {{ item.size_title }}</span>
+                      <!-- Change from item.size to item.size_title -->
+                    </div>
+                    <div class="item-price-info">
+                      <span class="item-unit-price">£{{ item.price }} each</span>
                     </div>
                     <div class="item-stock" :class="{ 'low-stock': item.stock < 10 }">
-                      {{ item.stock < 10 ? `Only ${item.stock} left` : 'In stock' }}
+                      {{ item.stock < 10 ? `Only ${item.stock} left in stock` : 'In stock' }} </div>
                     </div>
-                  </div>
 
-                  <div class="item-controls">
-                    <div class="quantity-control">
-                      <button 
-                        class="qty-btn" 
-                        @click="decreaseQuantity(item)"
-                        :disabled="item.quantity <= 1"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                      </button>
-                      <span class="quantity">{{ item.quantity }}</span>
-                      <button 
-                        class="qty-btn" 
-                        @click="increaseQuantity(item)"
-                        :disabled="item.quantity >= item.stock"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div class="price-info">
-                      <div class="unit-price">£{{ item.price }} each</div>
-                      <div class="total-price">£{{ (item.price * item.quantity).toFixed(2) }}</div>
-                    </div>
-                  </div>
+                    <div class="item-controls">
+                      <div class="quantity-control">
+                        <button class="qty-btn" @click="decreaseQuantity(item)" :disabled="item.quantity <= 1">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </button>
+                        <span class="quantity">{{ item.quantity }}</span>
+                        <button class="qty-btn" @click="increaseQuantity(item)" :disabled="item.quantity >= item.stock">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </button>
+                      </div>
 
-                  <button class="remove-btn" @click="removeItem(item)" title="Remove item">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      <div class="price-info">
+                        <div class="unit-price">£{{ item.price }} each</div>
+                        <div class="total-price">£{{ (item.price * item.quantity).toFixed(2) }}</div>
+                      </div>
+                    </div>
+
+                    <button class="remove-btn" @click="removeItem(item)" title="Remove item">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Empty Cart State -->
+              <div class="empty-state" v-else>
+                <div class="empty-state-content">
+                  <div class="empty-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.4 5.2 16.4H17M17 13V16.4M9 19C9 19.6 8.6 20 8 20C7.4 20 7 19.6 7 19C7 18.4 7.4 18 8 18C8.6 18 9 18.4 9 19ZM17 19C17 19.6 16.6 20 16 20C15.4 20 15 19.6 15 19C15 18.4 15.4 18 16 18C16.6 18 17 18.4 17 19Z"
+                        stroke="var(--primary-red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
-                  </button>
+                  </div>
+                  <h3>Your cart is empty</h3>
+                  <p>Looks like you haven't added any items to your cart yet.</p>
+                  <router-link to="/products" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
+                      <path
+                        d="M6 2L3 6V20C3 20.5304 3.21071 21.0391 3.58579 21.4142C3.96086 21.7893 4.46957 22 5 22H19C19.5304 22 20.0391 21.7893 20.4142 21.4142C20.7893 21.0391 21 20.5304 21 20V6L18 2H6Z"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      <path
+                        d="M16 10C16 11.0609 15.5786 12.0783 14.8284 12.8284C14.0783 13.5786 13.0609 14 12 14C10.9391 14 9.92172 13.5786 9.17157 12.8284C8.42143 12.0783 8 11.0609 8 10"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Start Shopping
+                  </router-link>
+                </div>
+              </div>
+
+              <!-- Trust Badges -->
+              <div class="trust-badges" v-if="cartStore.hasItems">
+                <div class="trust-item">
+                  <div class="trust-icon">🚚</div>
+                  <div class="trust-text">
+                    <strong>Free Delivery</strong>
+                    <span>On orders over £50</span>
+                  </div>
+                </div>
+                <div class="trust-item">
+                  <div class="trust-icon">↩️</div>
+                  <div class="trust-text">
+                    <strong>Easy Returns</strong>
+                    <span>30-day money back guarantee</span>
+                  </div>
+                </div>
+                <div class="trust-item">
+                  <div class="trust-icon">🔒</div>
+                  <div class="trust-text">
+                    <strong>Secure Checkout</strong>
+                    <span>Your data is always protected</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Empty Cart State -->
-            <div class="empty-state" v-else>
-              <div class="empty-state-content">
-                <div class="empty-icon">
-                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.4 5.2 16.4H17M17 13V16.4M9 19C9 19.6 8.6 20 8 20C7.4 20 7 19.6 7 19C7 18.4 7.4 18 8 18C8.6 18 9 18.4 9 19ZM17 19C17 19.6 16.6 20 16 20C15.4 20 15 19.6 15 19C15 18.4 15.4 18 16 18C16.6 18 17 18.4 17 19Z" 
-                          stroke="var(--primary-red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+            <!-- Order Summary Sidebar -->
+            <div class="cart-sidebar" v-if="cartStore.hasItems">
+              <div class="summary-card">
+                <h3 class="summary-title">Order Summary</h3>
+
+                <div class="summary-items">
+                  <div class="summary-row">
+                    <span>Subtotal ({{ cartStore.totalItems }} items)</span>
+                    <span>£{{ cartStore.subtotal.toFixed(2) }}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>Shipping</span>
+                    <span class="free-shipping">Free</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>VAT (20%)</span>
+                    <span>£{{ (cartStore.subtotal * 0.2).toFixed(2) }}</span>
+                  </div>
                 </div>
-                <h3>Your cart is empty</h3>
-                <p>Looks like you haven't added any items to your cart yet.</p>
-                <router-link to="/products" class="btn btn-primary">
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-total">
+                  <span>Total</span>
+                  <span class="total-amount">£{{ (cartStore.subtotal * 1.2).toFixed(2) }}</span>
+                </div>
+
+                <div class="shipping-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: shippingProgress + '%' }"></div>
+                  </div>
+                  <p class="progress-text" v-if="cartStore.subtotal < 50">
+                    Add £{{ (50 - cartStore.subtotal).toFixed(2) }} more for free shipping!
+                  </p>
+                  <p class="progress-text success" v-else>
+                    🎉 You qualify for free shipping!
+                  </p>
+                </div>
+
+                <button class="btn btn-primary checkout-btn" @click="proceedToCheckout">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
+                    <path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  Proceed to Checkout
+                </button>
+
+                <router-link to="/products" class="btn btn-outline continue-shopping">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
-                    <path d="M6 2L3 6V20C3 20.5304 3.21071 21.0391 3.58579 21.4142C3.96086 21.7893 4.46957 22 5 22H19C19.5304 22 20.0391 21.7893 20.4142 21.4142C20.7893 21.0391 21 20.5304 21 20V6L18 2H6Z" 
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M16 10C16 11.0609 15.5786 12.0783 14.8284 12.8284C14.0783 13.5786 13.0609 14 12 14C10.9391 14 9.92172 13.5786 9.17157 12.8284C8.42143 12.0783 8 11.0609 8 10" 
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
                   </svg>
-                  Start Shopping
+                  Continue Shopping
                 </router-link>
-              </div>
-            </div>
 
-            <!-- Trust Badges -->
-            <div class="trust-badges" v-if="cartStore.hasItems">
-              <div class="trust-item">
-                <div class="trust-icon">🚚</div>
-                <div class="trust-text">
-                  <strong>Free Delivery</strong>
-                  <span>On orders over £50</span>
-                </div>
-              </div>
-              <div class="trust-item">
-                <div class="trust-icon">↩️</div>
-                <div class="trust-text">
-                  <strong>Easy Returns</strong>
-                  <span>30-day money back guarantee</span>
-                </div>
-              </div>
-              <div class="trust-item">
-                <div class="trust-icon">🔒</div>
-                <div class="trust-text">
-                  <strong>Secure Checkout</strong>
-                  <span>Your data is always protected</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Order Summary Sidebar -->
-          <div class="cart-sidebar" v-if="cartStore.hasItems">
-            <div class="summary-card">
-              <h3 class="summary-title">Order Summary</h3>
-              
-              <div class="summary-items">
-                <div class="summary-row">
-                  <span>Subtotal ({{ cartStore.totalItems }} items)</span>
-                  <span>£{{ cartStore.subtotal.toFixed(2) }}</span>
-                </div>
-                <div class="summary-row">
-                  <span>Shipping</span>
-                  <span class="free-shipping">Free</span>
-                </div>
-                <div class="summary-row">
-                  <span>VAT (20%)</span>
-                  <span>£{{ (cartStore.subtotal * 0.2).toFixed(2) }}</span>
-                </div>
-              </div>
-
-              <div class="summary-divider"></div>
-
-              <div class="summary-total">
-                <span>Total</span>
-                <span class="total-amount">£{{ (cartStore.subtotal * 1.2).toFixed(2) }}</span>
-              </div>
-
-              <div class="shipping-progress">
-                <div class="progress-bar">
-                  <div class="progress-fill" :style="{ width: shippingProgress + '%' }"></div>
-                </div>
-                <p class="progress-text" v-if="cartStore.subtotal < 50">
-                  Add £{{ (50 - cartStore.subtotal).toFixed(2) }} more for free shipping!
-                </p>
-                <p class="progress-text success" v-else>
-                  🎉 You qualify for free shipping!
-                </p>
-              </div>
-
-              <button class="btn btn-primary checkout-btn" @click="proceedToCheckout">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
-                  <path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Proceed to Checkout
-              </button>
-
-              <router-link to="/products" class="btn btn-outline continue-shopping">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
-                  <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Continue Shopping
-              </router-link>
-
-              <div class="payment-methods">
-                <p>We accept:</p>
-                <div class="payment-icons">
-                  <span>💳</span>
-                  <span>📱</span>
-                  <span>🏦</span>
-                  <span>🔗</span>
+                <div class="payment-methods">
+                  <p>We accept:</p>
+                  <div class="payment-icons">
+                    <span>💳</span>
+                    <span>📱</span>
+                    <span>🏦</span>
+                    <span>🔗</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   </FrontendLayout>
 </template>
 
@@ -216,19 +217,20 @@ const shippingProgress = computed(() => {
 })
 
 // Methods
+// Update methods in Cart.vue script
 const increaseQuantity = (item) => {
-  cartStore.updateQuantity(item.id, item.variant_id, item.quantity + 1)
+  cartStore.updateQuantity(item.id, item.variant_id, item.size_id, item.quantity + 1)
 }
 
 const decreaseQuantity = (item) => {
   if (item.quantity > 1) {
-    cartStore.updateQuantity(item.id, item.variant_id, item.quantity - 1)
+    cartStore.updateQuantity(item.id, item.variant_id, item.size_id, item.quantity - 1)
   }
 }
 
 const removeItem = (item) => {
   if (confirm(`Are you sure you want to remove "${item.name}" from your cart?`)) {
-    cartStore.removeFromCart(item.id, item.variant_id)
+    cartStore.removeFromCart(item.id, item.variant_id, item.size_id)
   }
 }
 
@@ -240,7 +242,7 @@ const clearCart = () => {
 
 const proceedToCheckout = () => {
   // In a real app, this would navigate to checkout
-  alert('Proceeding to checkout...')
+ router.push('/checkout')
   // router.push('/checkout')
 }
 </script>
@@ -721,11 +723,11 @@ const proceedToCheckout = () => {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  
+
   .cart-sidebar {
     position: static;
   }
-  
+
   .summary-card {
     position: static;
   }
@@ -735,30 +737,30 @@ const proceedToCheckout = () => {
   .page-title {
     font-size: 2rem;
   }
-  
+
   .cart-item {
     grid-template-columns: 80px 1fr;
     gap: 1rem;
     padding: 1.5rem;
   }
-  
+
   .item-controls,
   .remove-btn {
     grid-column: 1 / -1;
     justify-self: start;
     margin-top: 1rem;
   }
-  
+
   .item-controls {
     flex-direction: row;
     justify-content: space-between;
     width: 100%;
   }
-  
+
   .trust-badges {
     grid-template-columns: 1fr;
   }
-  
+
   .section-header {
     flex-direction: column;
     gap: 1rem;
@@ -770,24 +772,24 @@ const proceedToCheckout = () => {
   .container {
     padding: 0 15px;
   }
-  
+
   .page-title {
     font-size: 1.8rem;
   }
-  
+
   .cart-item {
     padding: 1rem;
   }
-  
+
   .item-image {
     width: 70px;
     height: 70px;
   }
-  
+
   .summary-card {
     padding: 1.5rem;
   }
-  
+
   .checkout-btn,
   .continue-shopping {
     padding: 14px 20px;

@@ -55,7 +55,7 @@
                         id="phone" 
                         v-model="checkoutData.phone" 
                         required 
-                        placeholder="+44 1234 567890"
+                        placeholder="+91 98765 43210"
                       >
                     </div>
                   </div>
@@ -103,6 +103,7 @@
                         id="billingAddress1" 
                         v-model="checkoutData.billingAddress.address1" 
                         required
+                        placeholder="House No., Street, Area"
                       >
                     </div>
                     <div class="form-group full-width">
@@ -111,6 +112,7 @@
                         type="text" 
                         id="billingAddress2" 
                         v-model="checkoutData.billingAddress.address2"
+                        placeholder="Landmark, Building Name"
                       >
                     </div>
                     <div class="form-group">
@@ -123,12 +125,14 @@
                       >
                     </div>
                     <div class="form-group">
-                      <label for="billingPostcode">Postcode *</label>
+                      <label for="billingPostcode">Pincode *</label>
                       <input 
                         type="text" 
                         id="billingPostcode" 
                         v-model="checkoutData.billingAddress.postcode" 
                         required
+                        maxlength="6"
+                        pattern="[0-9]{6}"
                       >
                     </div>
                     <div class="form-group">
@@ -138,11 +142,7 @@
                         v-model="checkoutData.billingAddress.country" 
                         required
                       >
-                        <option value="">Select Country</option>
-                        <option value="GB">United Kingdom</option>
-                        <option value="US">United States</option>
-                        <option value="CA">Canada</option>
-                        <option value="AU">Australia</option>
+                        <option value="IN">India</option>
                       </select>
                     </div>
                   </div>
@@ -203,6 +203,7 @@
                         id="shippingAddress1" 
                         v-model="checkoutData.shippingAddress.address1" 
                         required
+                        placeholder="House No., Street, Area"
                       >
                     </div>
                     <div class="form-group full-width">
@@ -211,6 +212,7 @@
                         type="text" 
                         id="shippingAddress2" 
                         v-model="checkoutData.shippingAddress.address2"
+                        placeholder="Landmark, Building Name"
                       >
                     </div>
                     <div class="form-group">
@@ -223,12 +225,14 @@
                       >
                     </div>
                     <div class="form-group">
-                      <label for="shippingPostcode">Postcode *</label>
+                      <label for="shippingPostcode">Pincode *</label>
                       <input 
                         type="text" 
                         id="shippingPostcode" 
                         v-model="checkoutData.shippingAddress.postcode" 
                         required
+                        maxlength="6"
+                        pattern="[0-9]{6}"
                       >
                     </div>
                     <div class="form-group">
@@ -238,11 +242,7 @@
                         v-model="checkoutData.shippingAddress.country" 
                         required
                       >
-                        <option value="">Select Country</option>
-                        <option value="GB">United Kingdom</option>
-                        <option value="US">United States</option>
-                        <option value="CA">Canada</option>
-                        <option value="AU">Australia</option>
+                        <option value="IN">India</option>
                       </select>
                     </div>
                   </div>
@@ -273,7 +273,7 @@
                         <div class="option-description">{{ option.description }}</div>
                       </div>
                       <div class="option-price">
-                        {{ option.price === 0 ? 'Free' : `£${option.price}` }}
+                        {{ formatShipping(option.price) }}
                       </div>
                     </div>
                   </div>
@@ -303,6 +303,20 @@
                 <p>Choose how you want to pay</p>
               </div>
 
+              <!-- Payment Config Info -->
+              <div class="payment-config-info">
+                <div class="config-badge" v-if="settingsStore.testMode">
+                  <span class="test-mode-badge">TEST MODE</span>
+                  <small>No real payment required for testing</small>
+                </div>
+                <div class="config-warning" v-if="!settingsStore.stripeEnabled && !settingsStore.testMode && checkoutData.paymentMethod === 'card'">
+                  <span>⚠️ Card payments are currently disabled</span>
+                </div>
+                <div class="config-info" v-if="settingsStore.testMode && checkoutData.paymentMethod === 'card'">
+                  <span>✅ In test mode, card payments will be simulated without real transaction</span>
+                </div>
+              </div>
+
               <form @submit.prevent="processPayment" class="checkout-form">
                 <div class="form-section">
                   <h3>Payment Options</h3>
@@ -311,8 +325,11 @@
                       v-for="method in paymentMethods" 
                       :key="method.id"
                       class="payment-method"
-                      :class="{ selected: checkoutData.paymentMethod === method.id }"
-                      @click="checkoutData.paymentMethod = method.id"
+                      :class="{ 
+                        selected: checkoutData.paymentMethod === method.id,
+                        disabled: method.disabled 
+                      }"
+                      @click="selectPaymentMethod(method)"
                     >
                       <div class="method-radio">
                         <input 
@@ -321,6 +338,7 @@
                           :value="method.id"
                           v-model="checkoutData.paymentMethod"
                           class="radio-input"
+                          :disabled="method.disabled"
                         >
                         <label :for="`payment-${method.id}`" class="radio-label"></label>
                       </div>
@@ -328,12 +346,35 @@
                         <span v-html="method.icon"></span>
                       </div>
                       <div class="method-name">{{ method.name }}</div>
+                      <div class="method-description" v-if="method.description">
+                        {{ method.description }}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Credit Card Form -->
-                <div v-if="checkoutData.paymentMethod === 'card'" class="form-section">
+                <!-- COD Information -->
+                <div v-if="checkoutData.paymentMethod === 'cod'" class="cod-info-section">
+                  <div class="cod-info">
+                    <div class="cod-icon">💰</div>
+                    <div class="cod-details">
+                      <h4>Cash on Delivery</h4>
+                      <p>Pay when you receive your order. Please note:</p>
+                      <ul>
+                        <li>Exact change is preferred</li>
+                        <li>Available for orders under {{ formatPrice(codMaxAmount) }}</li>
+                        <li>Available only in India</li>
+                        <li>Additional verification may be required</li>
+                        <li v-if="!isCodAvailableForCountry">
+                          <strong>Note:</strong> COD not available for your selected country
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Credit Card Form (Only show if Stripe is enabled or in test mode) -->
+                <div v-if="checkoutData.paymentMethod === 'card' && (settingsStore.stripeEnabled || settingsStore.testMode)" class="form-section">
                   <h3>Card Details</h3>
                   <div class="form-grid">
                     <div class="form-group full-width">
@@ -342,10 +383,12 @@
                         type="text" 
                         id="cardNumber" 
                         v-model="checkoutData.card.number" 
-                        required 
+                        :required="!settingsStore.testMode"
                         placeholder="1234 5678 9012 3456"
                         maxlength="19"
+                        :disabled="settingsStore.testMode"
                       >
+                      <small v-if="settingsStore.testMode" class="test-mode-hint">Test mode: Any card number works</small>
                     </div>
                     <div class="form-group">
                       <label for="cardName">Name on Card *</label>
@@ -353,8 +396,9 @@
                         type="text" 
                         id="cardName" 
                         v-model="checkoutData.card.name" 
-                        required 
+                        :required="!settingsStore.testMode"
                         placeholder="John Doe"
+                        :disabled="settingsStore.testMode"
                       >
                     </div>
                     <div class="form-group">
@@ -363,9 +407,10 @@
                         type="text" 
                         id="cardExpiry" 
                         v-model="checkoutData.card.expiry" 
-                        required 
+                        :required="!settingsStore.testMode"
                         placeholder="MM/YY"
                         maxlength="5"
+                        :disabled="settingsStore.testMode"
                       >
                     </div>
                     <div class="form-group">
@@ -374,9 +419,10 @@
                         type="text" 
                         id="cardCVC" 
                         v-model="checkoutData.card.cvc" 
-                        required 
+                        :required="!settingsStore.testMode"
                         placeholder="123"
                         maxlength="4"
+                        :disabled="settingsStore.testMode"
                       >
                     </div>
                   </div>
@@ -387,7 +433,6 @@
                   <div class="paypal-info">
                     <p>You will be redirected to PayPal to complete your payment securely.</p>
                     <button type="button" class="btn btn-paypal" @click="processPayPal">
-                      <!-- <img src="/images/paypal-logo.png" alt="PayPal" class="paypal-logo"> -->
                       Continue with PayPal
                     </button>
                   </div>
@@ -416,10 +461,12 @@
                   <button 
                     type="submit" 
                     class="btn btn-primary btn-pay"
-                    :disabled="processingPayment"
+                    :disabled="processingPayment || isCodAmountExceeded"
                   >
                     <span v-if="processingPayment" class="spinner-small"></span>
-                    <span v-else>Complete Order - £{{ totalAmount.toFixed(2) }}</span>
+                    <span v-else-if="settingsStore.testMode">Complete Order (Test Mode) - {{ formattedTotal }}</span>
+                    <span v-else-if="isCodAmountExceeded">Order exceeds COD limit</span>
+                    <span v-else>Complete Order - {{ formattedTotal }}</span>
                   </button>
                 </div>
               </form>
@@ -438,6 +485,18 @@
                 <h2>Order Confirmed!</h2>
                 <p class="confirmation-subtitle">Thank you for your purchase</p>
                 
+                <!-- Test Mode Indicator in Confirmation -->
+                <div v-if="settingsStore.testMode" class="test-mode-confirmation">
+                  <span class="test-mode-badge">TEST ORDER</span>
+                  <p>This order was placed in test mode. No real payment was processed.</p>
+                </div>
+
+                <!-- COD Confirmation Note -->
+                <div v-if="checkoutData.paymentMethod === 'cod'" class="cod-confirmation-note">
+                  <span class="cod-badge">CASH ON DELIVERY</span>
+                  <p>Your order will be shipped and payment will be collected upon delivery.</p>
+                </div>
+                
                 <div class="order-summary">
                   <div class="order-info">
                     <div class="info-item">
@@ -454,7 +513,19 @@
                     </div>
                     <div class="info-item">
                       <span class="info-label">Total Amount:</span>
-                      <span class="info-value highlight">£{{ totalAmount.toFixed(2) }}</span>
+                      <span class="info-value highlight">{{ formattedTotal }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Payment Method:</span>
+                      <span class="info-value">{{ getPaymentMethodName(checkoutData.paymentMethod) }}</span>
+                    </div>
+                    <div class="info-item" v-if="settingsStore.testMode">
+                      <span class="info-label">Payment Status:</span>
+                      <span class="info-value test-status">Test Mode - Simulated</span>
+                    </div>
+                    <div class="info-item" v-else-if="checkoutData.paymentMethod === 'cod'">
+                      <span class="info-label">Payment Status:</span>
+                      <span class="info-value cod-status">Pending (Cash on Delivery)</span>
                     </div>
                   </div>
                 </div>
@@ -469,8 +540,14 @@
                 </div>
 
                 <div class="confirmation-note">
-                  <p>We've sent a confirmation email to <strong>{{ checkoutData.email }}</strong>. 
-                  You'll receive a shipping confirmation email when your order ships.</p>
+                  <p v-if="checkoutData.paymentMethod === 'cod'">
+                    <strong>Cash on Delivery Order:</strong> Please have exact change ready. 
+                    Our delivery agent will collect payment when your order is delivered.
+                  </p>
+                  <p v-else>
+                    We've sent a confirmation email to <strong>{{ checkoutData.email }}</strong>. 
+                    You'll receive a shipping confirmation email when your order ships.
+                  </p>
                 </div>
               </div>
             </div>
@@ -481,7 +558,28 @@
             <div class="order-summary-card">
               <h3>Order Summary</h3>
               
-              <div class="order-items">
+              <!-- Show direct checkout item if applicable -->
+              <div v-if="isDirectCheckout && directCheckoutProduct" class="direct-checkout-item">
+                <div class="order-items">
+                  <div class="order-item">
+                    <div class="item-image">
+                      <img :src="directCheckoutProduct.image" :alt="directCheckoutProduct.name">
+                      <span class="item-quantity">{{ directCheckoutProduct.quantity }}</span>
+                    </div>
+                    <div class="item-details">
+                      <h4 class="item-name">{{ directCheckoutProduct.name }}</h4>
+                      <div class="item-variants" v-if="directCheckoutProduct.variant_name || directCheckoutProduct.size_title">
+                        <span class="variant">{{ directCheckoutProduct.variant_name }}</span>
+                        <span class="variant" v-if="directCheckoutProduct.size_title">Size: {{ directCheckoutProduct.size_title }}</span>
+                      </div>
+                    </div>
+                    <div class="item-price">{{ formatItemPrice(directCheckoutProduct.price, directCheckoutProduct.quantity) }}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Show cart items for regular checkout -->
+              <div v-else class="order-items">
                 <div v-for="item in cartStore.items" :key="`${item.id}-${item.variant_id}`" class="order-item">
                   <div class="item-image">
                     <img :src="item.image" :alt="item.name">
@@ -494,28 +592,48 @@
                       <span class="variant" v-if="item.size">Size: {{ item.size }}</span>
                     </div>
                   </div>
-                  <div class="item-price">£{{ (item.price * item.quantity).toFixed(2) }}</div>
+                  <div class="item-price">{{ formatItemPrice(item.price, item.quantity) }}</div>
                 </div>
               </div>
 
               <div class="order-totals">
                 <div class="total-row">
                   <span>Subtotal</span>
-                  <span>£{{ cartStore.subtotal.toFixed(2) }}</span>
+                  <span>{{ formatPrice(subtotal) }}</span>
                 </div>
                 <div class="total-row">
                   <span>Shipping</span>
-                  <span>{{ selectedShippingPrice === 0 ? 'Free' : `£${selectedShippingPrice}` }}</span>
+                  <span>{{ formatShipping(selectedShippingPrice) }}</span>
                 </div>
                 <div class="total-row">
-                  <span>VAT (20%)</span>
-                  <span>£{{ vatAmount.toFixed(2) }}</span>
+                  <span>GST ({{ settingsStore.taxRate }}%)</span>
+                  <span>{{ formatPrice(vatAmount) }}</span>
                 </div>
                 <div class="total-divider"></div>
                 <div class="total-row grand-total">
                   <span>Total</span>
-                  <span>£{{ totalAmount.toFixed(2) }}</span>
+                  <span>{{ formattedTotal }}</span>
                 </div>
+              </div>
+
+              <!-- COD Warning -->
+              <div v-if="checkoutData.paymentMethod === 'cod' && totalAmount > codMaxAmount" class="cod-warning">
+                <div class="warning-icon">⚠️</div>
+                <p>Cash on Delivery not available for orders above {{ formatPrice(codMaxAmount) }}</p>
+              </div>
+
+              <!-- Free shipping notification -->
+              <div v-if="settingsStore.freeShippingThreshold > 0 && subtotal < settingsStore.freeShippingThreshold" class="free-shipping-info">
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill" 
+                    :style="{ width: Math.min((subtotal / settingsStore.freeShippingThreshold) * 100, 100) + '%' }"
+                  ></div>
+                </div>
+                <p>
+                  Add {{ formatPrice(settingsStore.freeShippingThreshold - subtotal) }} 
+                  more for free shipping!
+                </p>
               </div>
 
               <div class="security-badges">
@@ -540,7 +658,7 @@
                     <path d="M22 16.92V19C22 19.5304 21.7893 20.0391 21.4142 20.4142C21.0391 20.7893 20.5304 21 20 21H4C3.46957 21 2.96086 20.7893 2.58579 20.4142C2.21071 20.0391 2 19.5304 2 19V16.92M22 16.92C21.674 16.945 21.347 16.96 21 16.96C17.134 16.96 13.57 15.51 10.889 13.111C8.208 10.712 6.573 7.468 6.134 4M22 16.92C21.329 13.92 19.532 11.354 17 9.75" 
                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>0800 298 9230</span>
+                  <span>{{ settingsStore.settings.site.contact_phone }}</span>
                 </div>
                 <div class="contact-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -548,7 +666,7 @@
                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>support@pinders.com</span>
+                  <span>{{ settingsStore.settings.site.contact_email }}</span>
                 </div>
               </div>
             </div>
@@ -562,15 +680,27 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useCartStore } from '@/store/cart'
-import { useRouter } from 'vue-router'
+import { useSettingsStore } from '@/store/settings'
+import { useRouter, useRoute } from 'vue-router'
+import { toast } from 'vue3-toastify'
 import FrontendLayout from '@/layouts/FrontendLayout.vue'
+import api from '@/services/api'
 
 const cartStore = useCartStore()
+const settingsStore = useSettingsStore()
 const router = useRouter()
+const route = useRoute()
 
 const currentStep = ref(1)
 const processingPayment = ref(false)
 const useSameAsShipping = ref(true)
+const isDirectCheckout = ref(false)
+const directCheckoutProduct = ref(null)
+
+// COD Settings (Hardcoded for India)
+const codMaxAmount = 1000 // Maximum amount for COD in INR
+const codEnabled = true // COD is enabled
+const codCountries = ['IN'] // Only available in India
 
 // Checkout data
 const checkoutData = ref({
@@ -584,7 +714,7 @@ const checkoutData = ref({
     address2: '',
     city: '',
     postcode: '',
-    country: 'GB'
+    country: 'IN' // Default to India
   },
   billingAddress: {
     firstName: '',
@@ -594,10 +724,10 @@ const checkoutData = ref({
     address2: '',
     city: '',
     postcode: '',
-    country: 'GB'
+    country: 'IN' // Default to India
   },
   shippingMethod: 'standard',
-  paymentMethod: 'card',
+  paymentMethod: 'cod', // Default to COD for India
   card: {
     number: '',
     name: '',
@@ -607,25 +737,96 @@ const checkoutData = ref({
   notes: ''
 })
 
-// Mock data
-const shippingOptions = ref([
-  { id: 'standard', name: 'Standard Delivery', description: '3-5 business days', price: 4.99 },
-  { id: 'express', name: 'Express Delivery', description: '1-2 business days', price: 9.99 },
-  { id: 'next-day', name: 'Next Day Delivery', description: 'Next working day', price: 14.99 },
-  { id: 'free', name: 'Free Delivery', description: '5-7 business days', price: 0 }
-])
-
-const paymentMethods = ref([
-  { id: 'card', name: 'Credit/Debit Card', icon: '💳' },
-  { id: 'paypal', name: 'PayPal', icon: '🔵' },
-  { id: 'apple-pay', name: 'Apple Pay', icon: '🍎' },
-  { id: 'google-pay', name: 'Google Pay', icon: '📱' }
-])
-
+// Order info
 const orderNumber = ref('PIND' + Math.floor(Math.random() * 1000000))
 const orderDate = ref(new Date().toLocaleDateString('en-GB'))
 
 // Computed properties
+const subtotal = computed(() => {
+  if (isDirectCheckout.value && directCheckoutProduct.value) {
+    return directCheckoutProduct.value.price * directCheckoutProduct.value.quantity
+  }
+  return cartStore.subtotal
+})
+
+const shippingOptions = computed(() => {
+  const defaultShippingCost = settingsStore.settings.shipping?.default_cost || 99 // Default 99 INR for India
+  
+  const options = [
+    { 
+      id: 'standard', 
+      name: 'Standard Delivery', 
+      description: '5-7 business days', 
+      price: defaultShippingCost 
+    },
+    { 
+      id: 'express', 
+      name: 'Express Delivery', 
+      description: '2-3 business days', 
+      price: 199 
+    },
+    { 
+      id: 'next-day', 
+      name: 'Next Day Delivery', 
+      description: 'Next working day', 
+      price: 299 
+    }
+  ]
+  
+  // Add free shipping option if cart qualifies
+  if (settingsStore.isFreeShipping(subtotal.value)) {
+    options.push({
+      id: 'free',
+      name: 'Free Delivery',
+      description: '7-10 business days',
+      price: 0
+    })
+  }
+  
+  return options
+})
+
+const paymentMethods = computed(() => {
+  const methods = [
+    { id: 'cod', name: 'Cash on Delivery', icon: '💰' },
+    { id: 'card', name: 'Credit/Debit Card', icon: '💳' },
+    { id: 'paypal', name: 'PayPal', icon: '🔵' },
+    { id: 'google-pay', name: 'Google Pay', icon: '📱' }
+  ]
+  
+  return methods.map(method => {
+    let disabled = false
+    let description = ''
+    
+    // If COD is disabled
+    if (method.id === 'cod' && !codEnabled) {
+      disabled = true
+      description = 'Currently unavailable'
+    }
+    
+    // If Stripe is disabled and not in test mode, disable card/GPay
+    if (!settingsStore.stripeEnabled && !settingsStore.testMode && 
+        ['card', 'google-pay'].includes(method.id)) {
+      disabled = true
+      description = 'Currently unavailable'
+    }
+    
+    // If COD amount exceeded
+    if (method.id === 'cod' && totalAmount.value > codMaxAmount) {
+      disabled = true
+      description = `Available only for orders under ${formatPrice(codMaxAmount)}`
+    }
+    
+    // Check country restriction for COD
+    if (method.id === 'cod' && checkoutData.value.shippingAddress.country !== 'IN') {
+      disabled = true
+      description = 'Available only in India'
+    }
+    
+    return { ...method, disabled, description }
+  })
+})
+
 const selectedShipping = computed(() => {
   return shippingOptions.value.find(option => option.id === checkoutData.value.shippingMethod)
 })
@@ -634,13 +835,86 @@ const selectedShippingPrice = computed(() => {
   return selectedShipping.value?.price || 0
 })
 
+// Calculate tax using settings
 const vatAmount = computed(() => {
-  return cartStore.subtotal * 0.2
+  return settingsStore.calculateTax(subtotal.value)
 })
 
 const totalAmount = computed(() => {
-  return cartStore.subtotal + selectedShippingPrice.value + vatAmount.value
+  return subtotal.value + selectedShippingPrice.value + vatAmount.value
 })
+
+// Format total amount
+const formattedTotal = computed(() => {
+  return settingsStore.formatPrice(totalAmount.value)
+})
+
+// COD specific computed properties
+const isCodAvailableForCountry = computed(() => {
+  return checkoutData.value.shippingAddress.country === 'IN'
+})
+
+const isCodAmountExceeded = computed(() => {
+  if (checkoutData.value.paymentMethod !== 'cod') return false
+  return totalAmount.value > codMaxAmount
+})
+
+// Helper functions
+const formatPrice = (amount) => {
+  return settingsStore.formatPrice(amount)
+}
+
+const formatShipping = (cost) => {
+  return settingsStore.formatShipping(cost)
+}
+
+const formatItemPrice = (price, quantity = 1) => {
+  const total = price * quantity
+  return settingsStore.formatPrice(total)
+}
+
+const getPaymentMethodName = (methodId) => {
+  const method = paymentMethods.value.find(m => m.id === methodId)
+  return method ? method.name : methodId
+}
+
+// Helper function to get Stripe payment method types
+const getPaymentMethodTypes = (paymentMethod) => {
+  switch (paymentMethod) {
+    case 'google-pay':
+      return ['card', 'google_pay']
+    case 'apple-pay':
+      return ['card', 'apple_pay']
+    case 'card':
+      return ['card']
+    default:
+      return ['card']
+  }
+}
+
+// Initialize checkout data with test values in test mode
+const initializeTestData = () => {
+  if (settingsStore.testMode) {
+    checkoutData.value.email = 'test@example.com'
+    checkoutData.value.phone = '+91 98765 43210'
+    checkoutData.value.shippingAddress = {
+      firstName: 'Raj',
+      lastName: 'Sharma',
+      company: '',
+      address1: '123 Main Street',
+      address2: '',
+      city: 'Mumbai',
+      postcode: '400001',
+      country: 'IN'
+    }
+    checkoutData.value.card = {
+      number: '4242 4242 4242 4242',
+      name: 'Raj Sharma',
+      expiry: '12/30',
+      cvc: '123'
+    }
+  }
+}
 
 // Methods
 const goToStep = (step) => {
@@ -652,35 +926,567 @@ const handleLogin = () => {
   console.log('Login clicked')
 }
 
+const selectPaymentMethod = (method) => {
+  if (method.disabled) {
+    return
+  }
+  checkoutData.value.paymentMethod = method.id
+}
+
+const validateForm = () => {
+  // Basic validation
+  if (!checkoutData.value.email || !checkoutData.value.phone) {
+    toast.error('Please fill in all required fields')
+    return false
+  }
+  
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(checkoutData.value.email)) {
+    toast.error('Please enter a valid email address')
+    return false
+  }
+  
+  // Phone validation for India
+  const phoneRegex = /^(\+91[\-\s]?)?[0]?(91)?[6789]\d{9}$/
+  if (!phoneRegex.test(checkoutData.value.phone.replace(/\s/g, ''))) {
+    toast.error('Please enter a valid Indian phone number')
+    return false
+  }
+  
+  // Shipping address validation
+  if (!checkoutData.value.shippingAddress.firstName || !checkoutData.value.shippingAddress.lastName) {
+    toast.error('Please enter your shipping name')
+    return false
+  }
+  
+  if (!checkoutData.value.shippingAddress.address1 || !checkoutData.value.shippingAddress.city || 
+      !checkoutData.value.shippingAddress.postcode) {
+    toast.error('Please complete your shipping address')
+    return false
+  }
+  
+  // Pincode validation for India (6 digits)
+  const pincodeRegex = /^[1-9][0-9]{5}$/
+  if (!pincodeRegex.test(checkoutData.value.shippingAddress.postcode)) {
+    toast.error('Please enter a valid 6-digit pincode')
+    return false
+  }
+  
+  // If not using same as shipping, validate billing address
+  if (!useSameAsShipping.value) {
+    if (!checkoutData.value.billingAddress.firstName || !checkoutData.value.billingAddress.lastName) {
+      toast.error('Please enter your billing name')
+      return false
+    }
+    
+    if (!checkoutData.value.billingAddress.address1 || !checkoutData.value.billingAddress.city || 
+        !checkoutData.value.billingAddress.postcode) {
+      toast.error('Please complete your billing address')
+      return false
+    }
+    
+    if (!pincodeRegex.test(checkoutData.value.billingAddress.postcode)) {
+      toast.error('Please enter a valid 6-digit pincode for billing address')
+      return false
+    }
+  }
+  
+  // COD specific validation
+  if (checkoutData.value.paymentMethod === 'cod') {
+    // Check amount limit
+    if (totalAmount.value > codMaxAmount) {
+      toast.error(`Cash on Delivery is only available for orders under ${formatPrice(codMaxAmount)}`)
+      return false
+    }
+    
+    // Check country
+    if (checkoutData.value.shippingAddress.country !== 'IN') {
+      toast.error('Cash on Delivery is only available in India')
+      return false
+    }
+  }
+  
+  return true
+}
+
 const processPayment = async () => {
+  // Validate form
+  if (!validateForm()) {
+    return
+  }
+  
+  // Special validation for COD
+  if (checkoutData.value.paymentMethod === 'cod') {
+    // Double check amount limit
+    if (totalAmount.value > codMaxAmount) {
+      toast.error(`Cash on Delivery is only available for orders under ${formatPrice(codMaxAmount)}`)
+      return
+    }
+    
+    // Double check country
+    if (checkoutData.value.shippingAddress.country !== 'IN') {
+      toast.error('Cash on Delivery is only available in India')
+      return
+    }
+  }
+  
   processingPayment.value = true
   
-  // Simulate payment processing
-  setTimeout(() => {
-    processingPayment.value = false
-    goToStep(4)
+  try {
+    // Prepare order data
+    const orderData = {
+      checkout_type: isDirectCheckout.value ? 'direct' : 'cart',
+      email: checkoutData.value.email,
+      phone: checkoutData.value.phone,
+      shipping_address: checkoutData.value.shippingAddress,
+      billing_address: useSameAsShipping.value ? 
+        checkoutData.value.shippingAddress : 
+        checkoutData.value.billingAddress,
+      shipping_method: checkoutData.value.shippingMethod,
+      shipping_cost: selectedShippingPrice.value,
+      payment_method: checkoutData.value.paymentMethod,
+      notes: checkoutData.value.notes,
+      subtotal: subtotal.value,
+      tax_amount: vatAmount.value,
+      total_amount: totalAmount.value,
+      test_mode: settingsStore.testMode,
+      // For direct checkout
+      ...(isDirectCheckout.value && directCheckoutProduct.value ? {
+        product_id: directCheckoutProduct.value.product_id,
+        variant_id: directCheckoutProduct.value.variant_id,
+        size_id: directCheckoutProduct.value.size_id,
+        quantity: directCheckoutProduct.value.quantity
+      } : {})
+    }
     
-    // Clear cart after successful order
-    cartStore.clearCart()
-  }, 2000)
+    // Set payment status based on payment method
+    if (settingsStore.testMode) {
+      console.log('🔧 Test mode: Simulating payment processing...')
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // For test mode, all payments are successful
+      orderData.payment_status = checkoutData.value.paymentMethod === 'cod' ? 'pending' : 'paid'
+      orderData.stripe_payment_intent_id = 'test_' + Date.now()
+      
+    } else if (checkoutData.value.paymentMethod === 'cod') {
+      // Cash on Delivery - payment is pending
+      orderData.payment_status = 'pending'
+      orderData.stripe_payment_intent_id = null
+      
+    } else if (['card', 'google-pay'].includes(checkoutData.value.paymentMethod) && settingsStore.stripeEnabled) {
+      // Real Stripe payment processing
+      try {
+        // Create payment intent
+        const paymentIntentResponse = await api.post('/frontend/checkout/create-payment-intent', {
+          amount: totalAmount.value,
+          currency: 'inr', // INR for India
+          payment_method_types: getPaymentMethodTypes(checkoutData.value.paymentMethod)
+        })
+        
+        if (paymentIntentResponse.data.status) {
+          orderData.stripe_payment_intent_id = paymentIntentResponse.data.data.payment_intent_id
+          orderData.client_secret = paymentIntentResponse.data.data.client_secret
+          // For Stripe payments, we'll update status after successful payment
+          orderData.payment_status = 'pending'
+        } else {
+          throw new Error('Failed to create payment intent')
+        }
+        
+        // Here you would integrate with Stripe Elements to confirm payment
+        // This is a simplified version
+        
+      } catch (error) {
+        toast.error('Payment processing failed: ' + (error.message || 'Unknown error'))
+        processingPayment.value = false
+        return
+      }
+    } else if (checkoutData.value.paymentMethod === 'paypal') {
+      // PayPal processing
+      orderData.payment_status = 'pending'
+      orderData.stripe_payment_intent_id = null
+    }
+    
+    // Submit order to backend
+    const endpoint = isDirectCheckout.value ? '/frontend/checkout/direct' : '/frontend/checkout/cart'
+    
+    const orderResponse = await api.post(endpoint, orderData)
+    
+    if (orderResponse.data.status) {
+      // Store order info for confirmation
+      orderNumber.value = orderResponse.data.data.order_number || orderNumber.value
+      
+      // Clear cart if not direct checkout
+      if (!isDirectCheckout.value) {
+        cartStore.clearCart()
+      }
+      
+      // Clear direct checkout data
+      if (isDirectCheckout.value) {
+        sessionStorage.removeItem('direct_checkout_product')
+      }
+      
+      // Go to confirmation step
+      goToStep(4)
+      
+      toast.success('Order placed successfully!')
+    } else {
+      throw new Error(orderResponse.data.message || 'Failed to place order')
+    }
+    
+  } catch (error) {
+    console.error('Order processing error:', error)
+    toast.error('Failed to process order: ' + (error.message || 'Unknown error'))
+  } finally {
+    processingPayment.value = false
+  }
 }
 
 const processPayPal = () => {
   // Handle PayPal payment
+  toast.info('PayPal integration would be implemented here')
+  // For now, just process as normal payment
   processPayment()
 }
 
+const loadDirectCheckoutProduct = () => {
+  const query = route.query
+  const storedProduct = sessionStorage.getItem('direct_checkout_product')
+  
+  if (query.type === 'direct' && storedProduct) {
+    isDirectCheckout.value = true
+    directCheckoutProduct.value = JSON.parse(storedProduct)
+  }
+}
+
 // Lifecycle
-onMounted(() => {
-  if (!cartStore.hasItems) {
+onMounted(async () => {
+  // Ensure settings are loaded
+  if (!settingsStore.isLoaded && !settingsStore.isLoading) {
+    await settingsStore.fetchSettings()
+  }
+  
+  // Initialize test data if in test mode
+  if (settingsStore.testMode) {
+    initializeTestData()
+  }
+  
+  // Load direct checkout product if applicable
+  loadDirectCheckoutProduct()
+  
+  // Check if we have items to checkout
+  if (!isDirectCheckout.value && !cartStore.hasItems) {
     router.push('/cart')
+    return
+  }
+  
+  // Auto-select free shipping if applicable
+  if (settingsStore.isFreeShipping(subtotal.value)) {
+    checkoutData.value.shippingMethod = 'free'
   }
 })
 </script>
 
-<style scoped src="@/assets/styles/frontend.css"></style>
-
 <style scoped>
+/* Only add these new CSS classes for COD */
+
+/* COD Info Section */
+.cod-info-section {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.cod-info {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.cod-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.cod-details h4 {
+  margin: 0 0 0.5rem 0;
+  color: #166534;
+}
+
+.cod-details p {
+  margin: 0 0 0.5rem 0;
+  color: #15803d;
+}
+
+.cod-details ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.2rem;
+  color: #166534;
+}
+
+.cod-details li {
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+/* COD Warning in Sidebar */
+.cod-warning {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.warning-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.cod-warning p {
+  margin: 0;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+/* COD Confirmation Note */
+.cod-confirmation-note {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.cod-badge {
+  background: #22c55e;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.cod-confirmation-note p {
+  margin: 0;
+  color: #166534;
+}
+
+/* COD Status in Order Info */
+.cod-status {
+  color: #d97706;
+  font-weight: 600;
+}
+
+/* Payment config info styles */
+.payment-config-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.config-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-mode-badge {
+  background: #f59e0b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.config-warning {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.config-info {
+  color: #059669;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.payment-method.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.method-description {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.test-mode-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Test mode confirmation */
+.test-mode-confirmation {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.test-status {
+  color: #d97706;
+  font-weight: 600;
+}
+
+/* Free shipping info */
+.free-shipping-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #10b981;
+  transition: width 0.3s ease;
+}
+
+/* Spinner */
+.spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Payment config info */
+.payment-config-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.config-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-mode-badge {
+  background: #f59e0b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.config-warning {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.config-info {
+  color: #059669;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.payment-method.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.method-description {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.test-mode-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Test mode confirmation */
+.test-mode-confirmation {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.test-status {
+  color: #d97706;
+  font-weight: 600;
+}
+
+/* Free shipping info */
+.free-shipping-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #10b981;
+  transition: width 0.3s ease;
+}
+
+.text-green-600 {
+  color: #059669;
+}
+
+/* Direct checkout item */
+.direct-checkout-item {
+  margin-bottom: 1rem;
+}
+
 .checkout-page {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--gray-light) 0%, #f1f5f9 100%);
@@ -874,13 +1680,66 @@ onMounted(() => {
   border-color: var(--primary-red);
 }
 
+/* Remove any hover-only styles that might be hiding the button */
 .form-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  /* Align to left instead of space-between */
   align-items: center;
   gap: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
+  margin-top: 1rem;
+}
+
+/* Ensure the button is always visible */
+.form-actions .btn-outline {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+
+/* If there's any parent container hiding it, fix that too */
+.form-section .form-actions {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+/* Make sure the button has proper styling */
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--primary-red);
+  color: var(--primary-red);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline:hover {
+  background: var(--primary-red);
+  color: white;
+}
+
+/* If the button is inside a specific container that might be hiding it */
+.form-section>.form-actions {
+  margin-bottom: 1.5rem;
+}
+
+/* Add this if the button is still not showing */
+.billing-address-toggle {
+  display: block !important;
+  margin-bottom: 1.5rem;
+}
+
+/* Force show the button container */
+[class*="billing"]~.form-actions,
+[class*="address"]~.form-actions {
+  display: flex !important;
 }
 
 .btn-continue,
@@ -937,12 +1796,12 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.radio-input:checked + .radio-label {
+.radio-input:checked+.radio-label {
   border-color: var(--primary-red);
   background: var(--primary-red);
 }
 
-.radio-input:checked + .radio-label::after {
+.radio-input:checked+.radio-label::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1331,8 +2190,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Design */
@@ -1341,7 +2205,7 @@ onMounted(() => {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  
+
   .checkout-sidebar {
     position: static;
   }
@@ -1352,23 +2216,23 @@ onMounted(() => {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .step:not(:last-child)::after {
     display: none;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .payment-options {
     grid-template-columns: 1fr;
   }
-  
+
   .confirmation-actions {
     flex-direction: column;
   }
@@ -1378,11 +2242,11 @@ onMounted(() => {
   .checkout-step {
     padding: 1.5rem;
   }
-  
+
   .confirmation-step {
     padding: 2rem 1.5rem;
   }
-  
+
   .order-summary-card {
     padding: 1.5rem;
   }

@@ -37,18 +37,17 @@ const frontendRoutes = [
     meta: { title: "My Wishlist - Pinders" },
   },
   {
-    path: "/myorders",
+    path: "/account/orders",
     name: "My Orders",
-    component: () => import("@/pages/frontend/MyOrders.vue"),
+    component: () => import("@/pages/frontend/Orders.vue"),
     meta: { title: "My Wishlist - Pinders" },
   },
   {
-    path: "/order-history",
+    path: "/account/orders/:orderNumber",
     name: "History",
-    component: () => import("@/pages/frontend/OrderHistory.vue"),
+    component: () => import("@/pages/frontend/OrderDetail.vue"),
     meta: { title: "My Wishlist - Pinders" },
   },
-
   {
     path: "/login",
     name: "Login",

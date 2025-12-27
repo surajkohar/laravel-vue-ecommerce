@@ -2,7 +2,7 @@
 import { RouterView } from "vue-router"
 import { useAuthStore } from '@/store/auth'
 import { onMounted } from 'vue'
-
+import SettingsLoader from '@/layouts/SettingsLoader.vue'
 const authStore = useAuthStore()
 
 onMounted(() => {
@@ -11,5 +11,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <RouterView />
+  <SettingsLoader>
+    <RouterView />
+  </SettingsLoader>
 </template>

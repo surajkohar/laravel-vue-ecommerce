@@ -643,10 +643,11 @@ p {
   padding: 0 20px;
 }
 
+/* Cart Dropdown - Update these specific styles */
 .cart-item {
   display: flex;
   gap: 12px;
-  padding: 16px 0;
+  padding: 12px 0; /* Reduced from 16px */
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -669,43 +670,57 @@ p {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 4px; /* Added gap for better spacing */
 }
 
 .item-title {
-  font-size: 14px;
+  font-size: 13px; /* Reduced from 14px */
   font-weight: 600;
   line-height: 1.3;
   color: var(--primary-black);
-  margin: 0 0 8px 0;
+  margin: 0; /* Removed bottom margin */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Add this for size display */
+.item-size {
+  font-size: 11px;
+  color: var(--gray-medium);
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Update item-meta to align price and quantity properly */
 .item-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 6px; /* Reduced from 8px */
+  margin: 0; /* Removed bottom margin */
+  flex-wrap: nowrap;
 }
 
 .item-price {
-  font-size: 13px;
+  font-size: 12px; /* Reduced from 13px */
   color: var(--gray-medium);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .item-quantity {
-  font-size: 13px;
+  font-size: 12px; /* Reduced from 13px */
   color: var(--gray-medium);
+  white-space: nowrap;
 }
 
+/* Make item-total align properly */
 .item-total {
   font-weight: 700;
   color: var(--primary-red);
-  font-size: 14px;
-  align-self: flex-start;
+  font-size: 13px; /* Reduced from 14px */
+  margin-left: auto; /* Push to the right */
+  white-space: nowrap;
 }
 
 .cart-footer {

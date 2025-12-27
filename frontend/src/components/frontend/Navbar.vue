@@ -235,19 +235,26 @@
                     <!-- Cart Items -->
                     <div v-if="cartItems.length > 0" class="cart-content">
                       <div class="cart-items-scroll">
-                        <div v-for="item in cartItems" :key="`${item.id}-${item.variant_id}`" class="cart-item">
-                          <img :src="getProductImage(item)" :alt="item.name" class="item-image">
+                        <div v-for="item in cartItems" :key="`${item.id}-${item.variant_id}-${item.size_id}`"
+                          class="cart-item">
+                          <img :src="item.image" :alt="item.name" class="item-image">
                           <div class="item-details">
                             <h5 class="item-title">{{ item.name }}</h5>
+
+                            <!-- Display size below product name -->
+                            <div class="item-size" v-if="item.size_title">
+                              Size: {{ item.size_title }}
+                            </div>
+
+                            <!-- Price, quantity and total on same line -->
                             <div class="item-meta">
                               <span class="item-price">£{{ item.price }}</span>
                               <span class="item-quantity">× {{ item.quantity }}</span>
+                              <span class="item-total">£{{ (item.price * item.quantity).toFixed(2) }}</span>
                             </div>
-                            <span class="item-total">£{{ (item.price * item.quantity).toFixed(2) }}</span>
                           </div>
                         </div>
                       </div>
-
                       <!-- Cart Footer -->
                       <div class="cart-footer">
                         <div class="cart-summary">
@@ -612,7 +619,7 @@ const toggleMobileDropdown = (dropdown) => {
 onMounted(() => {
   authStore.hydrate()
   cartStore.hydrate()
-  wishlistStore.hydrate()
+  wishlistStore.loadWishlist()
 })
 
 // Cleanup

@@ -189,7 +189,7 @@
             </td>
             <td>{{ product.id }}</td>
             <td>{{ product.name }}</td>
-            <td>${{ product.price }}</td>
+            <td>{{ currencySymbol }} {{ product.price }}</td>
             <td>{{ product.brand_title || '-' }}</td>
             <td>{{ product.category_title || '-' }}</td>
             <td>{{ product.owner_first_name }}</td>
@@ -273,7 +273,7 @@ const showBulkActions = ref(false);
 const dropdownContainer = ref(null);
 const selectedIds = ref([]);
 const token = localStorage.getItem('auth_token');
-
+const currencySymbol = ref('');
 // State management
 const products = ref({
   data: [],
@@ -351,6 +351,8 @@ const fetchData = async () => {
     const data = await response.json();
     categories.value = data.category || [];
     brands.value = data.brands || [];
+    currencySymbol.value = data.currencySymbol || '₹';
+
   } catch (err) {
     console.error('Error fetching categories:', err);
   }
