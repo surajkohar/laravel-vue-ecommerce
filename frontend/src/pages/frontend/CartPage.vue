@@ -20,7 +20,7 @@
             <div class="cart-section" v-if="cartStore.hasItems">
               <div class="section-header">
                 <h2>Your Items ({{ cartStore.totalItems }})</h2>
-                <button class="btn btn-outline" @click="clearCart" v-if="cartStore.hasItems">
+                <button class="clear-cart-btn" style="border: 2px solid red;" @click="clearCart" v-if="cartStore.hasItems">
                   Clear Cart
                 </button>
               </div>
@@ -216,27 +216,67 @@ const shippingProgress = computed(() => {
   return Math.min(progress, 100)
 })
 
-// Methods
-// Update methods in Cart.vue script
-const increaseQuantity = (item) => {
-  cartStore.updateQuantity(item.id, item.variant_id, item.size_id, item.quantity + 1)
-}
-
-const decreaseQuantity = (item) => {
-  if (item.quantity > 1) {
-    cartStore.updateQuantity(item.id, item.variant_id, item.size_id, item.quantity - 1)
+// In Cart.vue
+const increaseQuantity = async (item) => {
+  console.log('🛒 DEBUG - Increasing quantity for item:', {
+    cart_item_id: item.id, // Now item.id is cart_item_id (1 or 2)
+    product_id: item.product_id, // product_id is separate
+    item: item
+  });
+  
+  try {
+    // Pass cart_item_id directly
+    const result = await cartStore.updateQuantity(item.id, item.quantity + 1);
+    
+    if (!result.success) {
+      console.error('Failed to increase quantity:', result.message);
+      alert(result.message);
+    }
+  } catch (error) {
+    console.error('Error increasing quantity:', error);
   }
 }
 
-const removeItem = (item) => {
+const decreaseQuantity = async (item) => {
+  if (item.quantity <= 1) return;
+  
+  try {
+    const result = await cartStore.updateQuantity(item.id, item.quantity - 1);
+    
+    if (!result.success) {
+      console.error('Failed to decrease quantity:', result.message);
+      alert(result.message);
+    }
+  } catch (error) {
+    console.error('Error decreasing quantity:', error);
+  }
+}
+
+const removeItem = async (item) => {
   if (confirm(`Are you sure you want to remove "${item.name}" from your cart?`)) {
-    cartStore.removeFromCart(item.id, item.variant_id, item.size_id)
+    try {
+      const result = await cartStore.removeFromCart(item.id); // Pass cart_item_id
+      
+      if (!result.success) {
+        console.error('Failed to remove item:', result.message);
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Error removing item:', error);
+    }
   }
 }
 
-const clearCart = () => {
+const clearCart = async () => {
   if (confirm('Are you sure you want to clear your entire cart?')) {
-    cartStore.clearCart()
+    try {
+      const result = await cartStore.clearCart();
+      if (!result.success) {
+        console.error('Failed to clear cart:', result.message);
+      }
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    }
   }
 }
 
@@ -795,5 +835,29 @@ const proceedToCheckout = () => {
     padding: 14px 20px;
     font-size: 1rem;
   }
+}
+
+.clear-cart-btn {
+  background-color: #dc3545 !important;
+  color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  min-width: 120px !important;
+  height: 40px !important;
+}
+
+.clear-cart-btn:hover {
+  background-color: #c82333 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2) !important;
 }
 </style>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Products;
 use App\Models\Admin\ProductVariant;
+use App\Models\Admin\Sizes;
 use App\Models\Users\CartItems;
 use App\Models\Users\Carts;
 use Illuminate\Http\Request;
@@ -26,11 +27,11 @@ class CartsController extends Controller
                 ], 401);
             }
 
-            // FIXED: Get the OLDEST active cart (cart_id = 1 with items)
+            // Get cart
             $cart = Carts::where('user_id', $user->id)
-                        ->where('status', 'active')
-                        ->orderBy('created_at', 'asc') // Get oldest cart first
-                        ->first();
+                ->where('status', 'active')
+                ->orderBy('created_at', 'asc')
+                ->first();
 
             if (!$cart) {
                 // Create new cart
@@ -45,25 +46,24 @@ class CartsController extends Controller
 
             // Get cart items with proper stock calculation
             $cartItems = CartItems::select([
-                    'cart_items.id',
-                    'cart_items.product_id',
-                    'cart_items.variant_id',
-                    'cart_items.size_id',
-                    'cart_items.quantity',
-                    'cart_items.price',
-                    'cart_items.created_at',
-                    'products.name',
-                    'products.main_image_name',
-                    'products.stock as product_stock', // Product-level stock
-                    'product_variants.color_name',
-                    'sizes.size_title',
-                    // Get size-specific stock from pivot table
-                    DB::raw('IF(cart_items.size_id IS NOT NULL,
-                        (SELECT pvs.stock FROM product_variant_sizes pvs
-                         WHERE pvs.variant_id = cart_items.variant_id
-                         AND pvs.size_id = cart_items.size_id),
-                        NULL) as size_stock')
-                ])
+                'cart_items.id',
+                'cart_items.product_id',
+                'cart_items.variant_id',
+                'cart_items.size_id',
+                'cart_items.quantity',
+                'cart_items.price',
+                'cart_items.created_at',
+                'products.name',
+                'products.main_image_name',
+                'products.stock as product_stock',
+                'product_variants.color_name',
+                'sizes.size_title',
+                DB::raw('IF(cart_items.size_id IS NOT NULL,
+                    (SELECT pvs.stock FROM product_variant_sizes pvs
+                     WHERE pvs.variant_id = cart_items.variant_id
+                     AND pvs.size_id = cart_items.size_id),
+                    NULL) as size_stock')
+            ])
                 ->leftJoin('products', 'products.id', '=', 'cart_items.product_id')
                 ->leftJoin('product_variants', 'product_variants.id', '=', 'cart_items.variant_id')
                 ->leftJoin('sizes', 'sizes.id', '=', 'cart_items.size_id')
@@ -74,20 +74,17 @@ class CartsController extends Controller
             // Format items and calculate stock availability
             $formattedItems = [];
             foreach ($cartItems as $item) {
-                // Determine stock based on variant/size selection
-                $stock = $item->product_stock; // Default to product stock
-
-                // If size is selected, use size-specific stock from pivot table
+                // Determine stock
+                $stock = $item->product_stock;
                 if ($item->size_id && $item->size_stock !== null) {
                     $stock = $item->size_stock;
                 }
 
-                // Calculate if item is in stock
                 $has_stock = $stock > 0;
 
                 $formattedItems[] = [
-                    'id' => $item->product_id,
-                    'cart_item_id' => $item->id,
+                    'id' => $item->id, // ✅ FIXED: This is cart_item_id (1 or 2)
+                    'product_id' => $item->product_id, // ✅ Add product_id separately
                     'name' => $item->name,
                     'price' => (float) $item->price,
                     'image' => $item->main_image_name ?
@@ -106,7 +103,7 @@ class CartsController extends Controller
 
             // Calculate totals
             $totalItems = array_sum(array_column($formattedItems, 'quantity'));
-            $subtotal = array_sum(array_map(function($item) {
+            $subtotal = array_sum(array_map(function ($item) {
                 return $item['price'] * $item['quantity'];
             }, $formattedItems));
 
@@ -119,7 +116,6 @@ class CartsController extends Controller
                     'subtotal' => $subtotal
                 ]
             ]);
-
         } catch (\Exception $e) {
             \Log::error('Cart index error: ' . $e->getMessage());
             return response()->json([
@@ -129,7 +125,6 @@ class CartsController extends Controller
             ], 500);
         }
     }
-
     /**
      * Add item to cart
      */
@@ -165,7 +160,11 @@ class CartsController extends Controller
 
             // Get product
             $product = Products::select([
-                'id', 'name', 'price', 'stock', 'main_image_name'
+                'id',
+                'name',
+                'price',
+                'stock',
+                'main_image_name'
             ])->find($request->product_id);
 
             if (!$product) {
@@ -177,9 +176,9 @@ class CartsController extends Controller
 
             // FIXED: Get the OLDEST active cart (same logic as index)
             $cart = Carts::where('user_id', $user->id)
-                        ->where('status', 'active')
-                        ->orderBy('created_at', 'asc')
-                        ->first();
+                ->where('status', 'active')
+                ->orderBy('created_at', 'asc')
+                ->first();
 
             \Log::info('Found cart: ' . ($cart ? 'ID: ' . $cart->id : 'None'));
 
@@ -310,8 +309,8 @@ class CartsController extends Controller
                 DB::raw('SUM(quantity) as total_quantity'),
                 DB::raw('SUM(price * quantity) as total_price')
             ])
-            ->where('cart_id', $cart->id)
-            ->first();
+                ->where('cart_id', $cart->id)
+                ->first();
 
             $totalItems = $cartTotals->total_quantity ?? 0;
             $subtotal = $cartTotals->total_price ?? 0;
@@ -327,7 +326,6 @@ class CartsController extends Controller
                     'subtotal' => $subtotal
                 ]
             ]);
-
         } catch (\Exception $e) {
             \Log::error('Cart add error: ' . $e->getMessage());
             \Log::error('Trace: ' . $e->getTraceAsString());
@@ -346,19 +344,17 @@ class CartsController extends Controller
     public function update($id, Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'quantity' => 'required|integer|min:0',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Validation error',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+            \Log::info('====== CART UPDATE DEBUG START ======');
+            \Log::info('Cart Item ID from URL parameter:', ['id' => $id]);
+            \Log::info('Request data:', $request->all());
+            \Log::info('Auth check:', ['is_authenticated' => Auth::check()]);
 
             $user = Auth::user();
+            \Log::info('User info:', [
+                'user_id' => $user ? $user->id : null,
+                'user_email' => $user ? $user->email : null
+            ]);
+
             if (!$user) {
                 return response()->json([
                     'status' => false,
@@ -366,46 +362,154 @@ class CartsController extends Controller
                 ], 401);
             }
 
+            $validator = Validator::make($request->all(), [
+                'quantity' => 'required|integer|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                \Log::error('Validation failed:', $validator->errors()->toArray());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             // Get cart
             $cart = Carts::where('user_id', $user->id)
-                        ->where('status', 'active')
-                        ->orderBy('created_at', 'asc')
-                        ->first();
+                ->where('status', 'active')
+                ->orderBy('created_at', 'asc')
+                ->first();
+
+            \Log::info('Cart found:', [
+                'cart_id' => $cart ? $cart->id : null,
+                'cart_exists' => !is_null($cart)
+            ]);
 
             if (!$cart) {
+                \Log::error('Cart not found for user:', ['user_id' => $user->id]);
                 return response()->json([
                     'status' => false,
                     'message' => 'Cart not found'
                 ], 404);
             }
 
-            // Check if item belongs to user's cart
-            $cartItem = CartItems::where('id', $id)
-                                ->where('cart_id', $cart->id)
-                                ->first();
+            // FIX: Convert $id to integer and find by cart_item_id
+            // The frontend is sending product_id (13) but should send cart_item_id (1 or 2)
+            $cartItemId = (int)$id;
+
+            \Log::info('Looking for cart item:', [
+                'input_id' => $id,
+                'converted_cart_item_id' => $cartItemId,
+                'expected_cart_item_ids' => [1, 2] // From your database
+            ]);
+
+            $cartItem = CartItems::where('id', $cartItemId)
+                ->where('cart_id', $cart->id)
+                ->first();
+
+            \Log::info('Cart item query result:', [
+                'cart_item_found' => !is_null($cartItem),
+                'cart_item_details' => $cartItem ? [
+                    'id' => $cartItem->id,
+                    'product_id' => $cartItem->product_id,
+                    'variant_id' => $cartItem->variant_id,
+                    'size_id' => $cartItem->size_id,
+                    'quantity' => $cartItem->quantity,
+                    'cart_id' => $cartItem->cart_id
+                ] : null
+            ]);
+
+            // Also check if the ID might be a product_id instead of cart_item_id
+            // This is a fallback in case frontend sends wrong ID
+            if (!$cartItem) {
+                \Log::info('Trying to find by product_id as fallback...');
+                $cartItem = CartItems::where('product_id', $cartItemId)
+                    ->where('cart_id', $cart->id)
+                    ->first();
+
+                \Log::info('Fallback search result:', [
+                    'found_by_product_id' => !is_null($cartItem),
+                    'cart_item_id_if_found' => $cartItem ? $cartItem->id : null
+                ]);
+            }
+
+            // Log all cart items for debugging
+            $allCartItems = CartItems::where('cart_id', $cart->id)->get();
+            \Log::info('All cart items in this cart:', $allCartItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'variant_id' => $item->variant_id,
+                    'size_id' => $item->size_id,
+                    'quantity' => $item->quantity
+                ];
+            })->toArray());
 
             if (!$cartItem) {
+                \Log::error('Cart item not found details:', [
+                    'searched_id' => $id,
+                    'converted_id' => $cartItemId,
+                    'user_cart_id' => $cart->id,
+                    'available_cart_item_ids' => $allCartItems->pluck('id')->toArray(),
+                    'available_product_ids' => $allCartItems->pluck('product_id')->toArray()
+                ]);
+
+                \Log::info('====== CART UPDATE DEBUG END ======');
+
                 return response()->json([
                     'status' => false,
-                    'message' => 'Cart item not found'
+                    'message' => 'Cart item not found. Please refresh your cart.',
+                    'debug_info' => [
+                        'searched_id' => $id,
+                        'cart_id' => $cart->id,
+                        'available_items' => $allCartItems->map(function ($item) {
+                            return [
+                                'cart_item_id' => $item->id,
+                                'product_id' => $item->product_id,
+                                'variant_id' => $item->variant_id,
+                                'size_id' => $item->size_id
+                            ];
+                        })->toArray()
+                    ]
                 ], 404);
             }
 
+            // Check stock availability
+            $stock = $this->getAvailableStock($cartItem);
+            \Log::info('Stock check:', [
+                'requested_quantity' => $request->quantity,
+                'available_stock' => $stock,
+                'current_quantity' => $cartItem->quantity,
+                'product_id' => $cartItem->product_id,
+                'variant_id' => $cartItem->variant_id,
+                'size_id' => $cartItem->size_id
+            ]);
+
             if ($request->quantity === 0) {
                 // Remove item
-                if (CartItems::where('id', $id)->delete()) {
+                \Log::info('Removing item from cart:', [
+                    'cart_item_id' => $cartItem->id,
+                    'product_name' => $cartItem->product->name ?? 'N/A'
+                ]);
+
+                if (CartItems::where('id', $cartItem->id)->delete()) {
                     $message = 'Item removed from cart';
+                    \Log::info('Item removed successfully');
                 } else {
+                    \Log::error('Failed to delete cart item');
                     return response()->json([
                         'status' => false,
                         'message' => 'Failed to remove item from cart'
                     ], 500);
                 }
             } else {
-                // Check stock availability
-                $stock = $this->getAvailableStock($cartItem);
-
                 if ($request->quantity > $stock) {
+                    \Log::error('Insufficient stock:', [
+                        'requested' => $request->quantity,
+                        'available' => $stock,
+                        'product_id' => $cartItem->product_id
+                    ]);
                     return response()->json([
                         'status' => false,
                         'message' => 'Requested quantity exceeds available stock. Only ' . $stock . ' items available.'
@@ -413,12 +517,20 @@ class CartsController extends Controller
                 }
 
                 // Update quantity
-                if (CartItems::where('id', $id)->update([
-                    'quantity' => $request->quantity,
-                    'updated_at' => now()
-                ])) {
+                \Log::info('Updating quantity:', [
+                    'cart_item_id' => $cartItem->id,
+                    'from' => $cartItem->quantity,
+                    'to' => $request->quantity
+                ]);
+
+                $cartItem->quantity = $request->quantity;
+                $cartItem->updated_at = now();
+
+                if ($cartItem->save()) {
                     $message = 'Cart item updated';
+                    \Log::info('Quantity updated successfully');
                 } else {
+                    \Log::error('Failed to update cart item quantity');
                     return response()->json([
                         'status' => false,
                         'message' => 'Failed to update cart item'
@@ -431,28 +543,97 @@ class CartsController extends Controller
                 DB::raw('SUM(quantity) as total_quantity'),
                 DB::raw('SUM(price * quantity) as total_price')
             ])
-            ->where('cart_id', $cart->id)
-            ->first();
+                ->where('cart_id', $cart->id)
+                ->first();
 
             $totalItems = $cartItems->total_quantity ?? 0;
             $subtotal = $cartItems->total_price ?? 0;
+
+            \Log::info('Updated cart totals:', [
+                'total_items' => $totalItems,
+                'subtotal' => $subtotal
+            ]);
+
+            \Log::info('====== CART UPDATE DEBUG END ======');
 
             return response()->json([
                 'status' => true,
                 'message' => $message,
                 'data' => [
                     'total_items' => $totalItems,
-                    'subtotal' => $subtotal
+                    'subtotal' => $subtotal,
+                    'cart_item_id' => $cartItem->id, // Return the actual cart_item_id for debugging
+                    'product_id' => $cartItem->product_id
                 ]
             ]);
-
         } catch (\Exception $e) {
             \Log::error('Cart update error: ' . $e->getMessage());
+            \Log::error('Stack trace:', $e->getTrace());
+
+            \Log::info('====== CART UPDATE DEBUG END (ERROR) ======');
+
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to update cart item',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get available stock for a cart item
+     */
+    private function getAvailableStock($cartItem)
+    {
+        try {
+            \Log::info('Getting stock for cart item:', [
+                'product_id' => $cartItem->product_id,
+                'variant_id' => $cartItem->variant_id,
+                'size_id' => $cartItem->size_id
+            ]);
+
+            // Get product
+            $product = Products::find($cartItem->product_id);
+            if (!$product) {
+                \Log::warning('Product not found:', ['product_id' => $cartItem->product_id]);
+                return 0;
+            }
+
+            // If product has variants, get variant stock
+            if ($cartItem->variant_id) {
+                $variant = ProductVariant::find($cartItem->variant_id);
+                if ($variant && $variant->stock !== null) {
+                    \Log::info('Using variant stock:', [
+                        'variant_id' => $variant->id,
+                        'stock' => $variant->stock
+                    ]);
+                    return $variant->stock;
+                }
+            }
+
+            // If product has sizes, get size stock
+            if ($cartItem->size_id) {
+                $size = Sizes::find($cartItem->size_id);
+                if ($size && $size->stock !== null) {
+                    \Log::info('Using size stock:', [
+                        'size_id' => $size->id,
+                        'stock' => $size->stock
+                    ]);
+                    return $size->stock;
+                }
+            }
+
+            // Return product stock as fallback
+            $productStock = $product->stock ?? 0;
+            \Log::info('Using product stock:', [
+                'product_id' => $product->id,
+                'stock' => $productStock
+            ]);
+
+            return $productStock;
+        } catch (\Exception $e) {
+            \Log::error('Error getting stock: ' . $e->getMessage());
+            return 0;
         }
     }
 
@@ -472,9 +653,9 @@ class CartsController extends Controller
 
             // Get cart
             $cart = Carts::where('user_id', $user->id)
-                        ->where('status', 'active')
-                        ->orderBy('created_at', 'asc')
-                        ->first();
+                ->where('status', 'active')
+                ->orderBy('created_at', 'asc')
+                ->first();
 
             if (!$cart) {
                 return response()->json([
@@ -485,8 +666,8 @@ class CartsController extends Controller
 
             // Check if item belongs to user's cart
             $cartItem = CartItems::where('id', $id)
-                                ->where('cart_id', $cart->id)
-                                ->first();
+                ->where('cart_id', $cart->id)
+                ->first();
 
             if (!$cartItem) {
                 return response()->json([
@@ -501,8 +682,8 @@ class CartsController extends Controller
                     DB::raw('SUM(quantity) as total_quantity'),
                     DB::raw('SUM(price * quantity) as total_price')
                 ])
-                ->where('cart_id', $cart->id)
-                ->first();
+                    ->where('cart_id', $cart->id)
+                    ->first();
 
                 $totalItems = $cartItems->total_quantity ?? 0;
                 $subtotal = $cartItems->total_price ?? 0;
@@ -521,7 +702,6 @@ class CartsController extends Controller
                     'message' => 'Failed to remove item from cart'
                 ], 500);
             }
-
         } catch (\Exception $e) {
             \Log::error('Cart remove error: ' . $e->getMessage());
             return response()->json([
@@ -548,9 +728,9 @@ class CartsController extends Controller
 
             // Get cart
             $cart = Carts::where('user_id', $user->id)
-                        ->where('status', 'active')
-                        ->orderBy('created_at', 'asc')
-                        ->first();
+                ->where('status', 'active')
+                ->orderBy('created_at', 'asc')
+                ->first();
 
             if (!$cart) {
                 return response()->json([
@@ -592,7 +772,6 @@ class CartsController extends Controller
                     ]
                 ]);
             }
-
         } catch (\Exception $e) {
             \Log::error('Cart clear error: ' . $e->getMessage());
             return response()->json([
@@ -636,9 +815,9 @@ class CartsController extends Controller
 
             // Get or create user cart
             $cart = Carts::where('user_id', $user->id)
-                        ->where('status', 'active')
-                        ->orderBy('created_at', 'asc')
-                        ->first();
+                ->where('status', 'active')
+                ->orderBy('created_at', 'asc')
+                ->first();
 
             if (!$cart) {
                 $cart = Carts::create([
@@ -704,8 +883,8 @@ class CartsController extends Controller
                 DB::raw('SUM(quantity) as total_quantity'),
                 DB::raw('SUM(price * quantity) as total_price')
             ])
-            ->where('cart_id', $cart->id)
-            ->first();
+                ->where('cart_id', $cart->id)
+                ->first();
 
             $totalItems = $cartItems->total_quantity ?? 0;
             $subtotal = $cartItems->total_price ?? 0;
@@ -724,7 +903,6 @@ class CartsController extends Controller
             }
 
             return response()->json($response);
-
         } catch (\Exception $e) {
             \Log::error('Cart merge error: ' . $e->getMessage());
             return response()->json([
@@ -738,25 +916,25 @@ class CartsController extends Controller
     /**
      * Helper method to get available stock for a cart item
      */
-    private function getAvailableStock($cartItem)
-    {
-        // Get product stock
-        $product = Products::select(['stock'])->find($cartItem->product_id);
-        $stock = $product->stock;
+    // private function getAvailableStock($cartItem)
+    // {
+    //     // Get product stock
+    //     $product = Products::select(['stock'])->find($cartItem->product_id);
+    //     $stock = $product->stock;
 
-        // Check size stock if size is selected
-        if ($cartItem->size_id && $cartItem->variant_id) {
-            $sizeVariant = DB::table('product_variant_sizes')
-                ->select(['stock'])
-                ->where('variant_id', $cartItem->variant_id)
-                ->where('size_id', $cartItem->size_id)
-                ->first();
+    //     // Check size stock if size is selected
+    //     if ($cartItem->size_id && $cartItem->variant_id) {
+    //         $sizeVariant = DB::table('product_variant_sizes')
+    //             ->select(['stock'])
+    //             ->where('variant_id', $cartItem->variant_id)
+    //             ->where('size_id', $cartItem->size_id)
+    //             ->first();
 
-            if ($sizeVariant) {
-                $stock = $sizeVariant->stock;
-            }
-        }
+    //         if ($sizeVariant) {
+    //             $stock = $sizeVariant->stock;
+    //         }
+    //     }
 
-        return $stock;
-    }
+    //     return $stock;
+    // }
 }

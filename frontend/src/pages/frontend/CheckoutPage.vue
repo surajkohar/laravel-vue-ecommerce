@@ -2251,4 +2251,15 @@ onMounted(async () => {
     padding: 1.5rem;
   }
 }
+
+/* Add this to your global or component CSS */
+.btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 100px;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 </style>
