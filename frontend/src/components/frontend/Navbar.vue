@@ -51,8 +51,8 @@
               </button>
 
               <!-- Profile Dropdown Menu -->
-              <div class="dropdown-menu account-menu" v-show="showProfileDropdown" @mouseenter="keepProfileDropdownOpen"
-                @mouseleave="hideProfileDropdown">
+              <div class="dropdown-menu account-menu" :class="{ 'show': showProfileDropdown }"
+                v-show="showProfileDropdown">
                 <template v-if="!isAuthenticated">
                   <div class="dropdown-header">
                     <h4>Welcome</h4>
@@ -171,8 +171,8 @@
               </router-link>
 
               <!-- Wishlist Dropdown Menu -->
-              <div class="dropdown-menu wishlist-menu" :class="{ 'show': true }" @mouseenter="keepWishlistDropdownOpen"
-                @mouseleave="hideWishlistDropdown">
+              <div class="dropdown-menu wishlist-menu" :class="{ 'show': showWishlistDropdown }"
+                v-show="showWishlistDropdown">
                 <div class="wishlist-dropdown-content">
                   <div class="wishlist-header">
                     <h4>Your Wishlist ({{ wishlistStore.totalItems }})</h4>
@@ -223,8 +223,7 @@
               </router-link>
 
               <!-- Cart Dropdown -->
-              <div class="dropdown-menu cart-dropdown-menu" :class="{ 'show': showCart }" @mouseenter="keepCartOpen"
-                @mouseleave="hideCartDelay">
+              <div class="dropdown-menu cart-dropdown-menu" :class="{ 'show': showCart }">
                 <div class="cart-dropdown-container">
                   <div class="cart-dropdown-content">
                     <!-- Cart Header -->
