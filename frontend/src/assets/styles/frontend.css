@@ -642,6 +642,7 @@ p {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
 }
 
 .cart-dropdown-menu .cart-header {
@@ -2535,4 +2536,345 @@ p {
   fill: var(--gray-medium);
 }
 
+
+/* Add these styles to your existing frontend.css */
+
+/* Fix for desktop hover */
+@media (min-width: 769px) {
+  .icon-dropdown:hover .dropdown-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    pointer-events: all !important;
+  }
+
+  .mega-menu:hover .mega-menu-content {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    display: flex !important;
+  }
+
+  /* Ensure dropdown stays open when hovering over it */
+  .dropdown-menu:hover {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+  }
+}
+
+/* Mobile specific styles */
+@media (max-width: 768px) {
+  /* Mobile menu toggle animation */
+  .mobile-menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+  
+  .mobile-menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+  }
+  
+  .mobile-menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -6px);
+  }
+
+  .mobile-menu-toggle span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background: var(--primary-black);
+    margin: 4px 0;
+    transition: 0.3s;
+  }
+
+  /* Header layout adjustments */
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+
+  .logo {
+    flex: 1;
+  }
+
+  .header-icons {
+    display: flex;
+    gap: 15px;
+    margin-right: 50px; /* Space for hamburger */
+  }
+
+  .mobile-menu-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
+  }
+
+  /* Hide desktop elements */
+  .search-container,
+  .main-navigation {
+    display: none;
+  }
+
+  /* Mobile dropdown styles */
+  .dropdown-menu {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+    border-radius: 16px 16px 0 0 !important;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    max-height: 70vh;
+    overflow-y: auto;
+    margin: 0 !important;
+  }
+
+  .dropdown-menu.show {
+    transform: translateY(0) !important;
+  }
+
+  /* Remove arrow on mobile */
+  .dropdown-menu::before {
+    display: none;
+  }
+
+  /* Close button for mobile dropdowns */
+  .close-dropdown {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--gray-medium);
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .wishlist-header,
+  .cart-header {
+    position: relative;
+    padding-right: 50px;
+  }
+
+  /* Mega menu for mobile */
+  .mega-menu-content {
+    display: none;
+  }
+
+  .nav-link {
+    pointer-events: auto;
+  }
+
+  /* Icon text hidden on mobile */
+  .icon-text {
+    display: none;
+  }
+
+  .icon-btn {
+    padding: 5px;
+  }
+
+  /* Mobile navigation dropdown arrows */
+  .mobile-dropdown-arrow {
+    float: right;
+    margin-left: 10px;
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-dropdown.active .mobile-dropdown-arrow {
+    transform: rotate(90deg);
+  }
+
+  /* Mobile submenu styling */
+  .mobile-submenu {
+    background: #f8f9fa;
+    padding-left: 20px;
+  }
+
+  .mobile-submenu h5 {
+    padding: 10px 20px;
+    margin: 0;
+    background: var(--gray-light);
+    color: var(--primary-black);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .mobile-submenu a {
+    padding-left: 30px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .mobile-submenu a:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Desktop specific fixes */
+@media (min-width: 769px) {
+  .mobile-menu-toggle {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: none;
+  }
+
+  /* Ensure mega menus show on hover */
+  .mega-menu-content {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-medium);
+    width: 100%;
+    min-width: 800px;
+    z-index: 1000;
+  }
+
+  .mega-menu:hover .mega-menu-content {
+    display: flex;
+  }
+
+  /* Fix dropdown positioning */
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-heavy);
+    min-width: 250px;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(15px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .icon-dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  /* Keep dropdown open when hovering over it */
+  .dropdown-menu:hover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+/* Fix for cart and wishlist counts */
+.wishlist-count-nav,
+.cart-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--primary-red);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .wishlist-count-nav,
+  .cart-count {
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+}
+
+/* Ensure proper z-index */
+.header {
+  position: relative;
+  z-index: 1000;
+}
+
+.main-header {
+  position: relative;
+  z-index: 1001;
+}
+
+.dropdown-menu {
+  z-index: 1002;
+}
+
+.mega-menu-content {
+  z-index: 1002;
+}
+
+.mobile-menu {
+  z-index: 1003;
+}
+
+/* Fix button cursor */
+.icon-btn {
+  cursor: pointer;
+}
+
+/* Fix for mega menu columns */
+.mega-menu-column {
+  flex: 1;
+  padding: 30px;
+  border-right: 1px solid var(--border-color);
+}
+
+.mega-menu-column:last-child {
+  border-right: none;
+}
+
+.mega-menu-column h4 {
+  color: var(--primary-red);
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mega-menu-column a {
+  display: block;
+  padding: 8px 0;
+  color: var(--primary-black);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mega-menu-column a:hover {
+  color: var(--primary-red);
+}
+
+.mega-menu-column a:last-child {
+  border-bottom: none;
+}
 

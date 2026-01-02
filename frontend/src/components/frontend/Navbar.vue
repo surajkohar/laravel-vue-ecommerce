@@ -20,7 +20,16 @@
             </div>
           </router-link>
 
-          <!-- Search Bar -->
+          <!-- Mobile Menu Toggle - Moved here for better positioning -->
+<button class="mobile-menu-toggle ml-2" @click="toggleMobileMenu" :class="{ 'active': showMobileMenu }">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="hamburger-icon">
+    <path d="M3 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+</button>
+
+          <!-- Search Bar - Hidden on mobile -->
           <div class="search-container">
             <form class="search-form" @submit.prevent="performSearch">
               <input type="text" v-model="searchQuery" placeholder="Search for products..." class="search-input">
@@ -37,9 +46,11 @@
           <!-- Header Icons -->
           <div class="header-icons">
             <!-- Account Dropdown -->
-            <div class="icon-dropdown account-dropdown" @mouseenter="showProfileDropdown = true"
-              @mouseleave="hideProfileDropdown">
-              <button class="icon-btn">
+            <div class="icon-dropdown account-dropdown" 
+              ref="accountDropdown"
+              @mouseenter="onDesktop && (showProfileDropdown = true)"
+              @mouseleave="onDesktop && hideProfileDropdown()">
+              <button class="icon-btn" @click="toggleProfileDropdown">
                 <div class="icon-wrapper">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                     <path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21" stroke="currentColor"
@@ -47,7 +58,7 @@
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" />
                   </svg>
                 </div>
-                <span class="icon-text">Account {{ authStore.user.name }}</span>
+                <span class="icon-text">Account</span>
               </button>
 
               <!-- Profile Dropdown Menu -->
@@ -154,9 +165,11 @@
             </div>
 
             <!-- Wishlist Dropdown -->
-            <div class="icon-dropdown wishlist-dropdown" @mouseenter="showWishlistDropdown = true"
-              @mouseleave="hideWishlistDropdown">
-              <router-link to="/wishlist" class="icon-btn wishlist-btn">
+            <div class="icon-dropdown wishlist-dropdown" 
+              ref="wishlistDropdown"
+              @mouseenter="onDesktop && (showWishlistDropdown = true)"
+              @mouseleave="onDesktop && hideWishlistDropdown()">
+              <button class="icon-btn wishlist-btn" @click="toggleWishlistDropdown">
                 <div class="icon-wrapper">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                     <path
@@ -168,7 +181,7 @@
                   </span>
                 </div>
                 <span class="icon-text">Wishlist</span>
-              </router-link>
+              </button>
 
               <!-- Wishlist Dropdown Menu -->
               <div class="dropdown-menu wishlist-menu" :class="{ 'show': showWishlistDropdown }"
@@ -176,6 +189,7 @@
                 <div class="wishlist-dropdown-content">
                   <div class="wishlist-header">
                     <h4>Your Wishlist ({{ wishlistStore.totalItems }})</h4>
+                    <button v-if="!onDesktop" class="close-dropdown" @click="showWishlistDropdown = false">×</button>
                   </div>
 
                   <div v-if="wishlistStore.totalItems > 0" class="wishlist-items">
@@ -209,8 +223,11 @@
             </div>
 
             <!-- Cart -->
-            <div class="icon-dropdown cart-dropdown" @mouseenter="showCart = true" @mouseleave="hideCartDelay">
-              <router-link to="/cart" class="icon-btn cart-btn">
+            <div class="icon-dropdown cart-dropdown" 
+              ref="cartDropdown"
+              @mouseenter="onDesktop && (showCart = true)"
+              @mouseleave="onDesktop && hideCartDelay()">
+              <button class="icon-btn cart-btn" @click="toggleCart">
                 <div class="icon-wrapper">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -220,7 +237,7 @@
                   <span class="cart-count" v-if="cartTotal > 0">{{ cartTotal }}</span>
                 </div>
                 <span class="icon-text">Cart</span>
-              </router-link>
+              </button>
 
               <!-- Cart Dropdown -->
               <div class="dropdown-menu cart-dropdown-menu" :class="{ 'show': showCart }">
@@ -229,6 +246,7 @@
                     <!-- Cart Header -->
                     <div class="cart-header">
                       <h4>Your Cart ({{ cartTotal }})</h4>
+                      <button v-if="!onDesktop" class="close-dropdown" @click="showCart = false">×</button>
                     </div>
 
                     <!-- Cart Items -->
@@ -301,100 +319,109 @@
           </li>
 
           <!-- Workwear Mega Menu -->
-          <li class="nav-item mega-menu">
-            <a href="#" class="nav-link">Workwear ▾</a>
-            <div class="mega-menu-content">
+          <li class="nav-item mega-menu" 
+              ref="workwearMegaMenu"
+              @mouseenter="onDesktop && (activeMegaMenu = 'workwear')"
+              @mouseleave="onDesktop && (activeMegaMenu = '')">
+            <a href="#" class="nav-link" @click.prevent="toggleMegaMenu('workwear')">Workwear ▾</a>
+            <div class="mega-menu-content" v-show="onDesktop ? activeMegaMenu === 'workwear' : showMobileMegaMenu === 'workwear'">
               <div class="mega-menu-column">
                 <h4>Men's Workwear</h4>
-                <router-link to="/workwear/mens/work-jackets">Work Jackets</router-link>
-                <router-link to="/workwear/mens/work-trousers">Work Trousers</router-link>
-                <router-link to="/workwear/mens/coveralls">Coveralls</router-link>
-                <router-link to="/workwear/mens/hi-vis">Hi-Vis Clothing</router-link>
-                <router-link to="/workwear/mens/fleeces">Fleeces & Sweatshirts</router-link>
+                <router-link to="/workwear/mens/work-jackets" @click="closeMegaMenu">Work Jackets</router-link>
+                <router-link to="/workwear/mens/work-trousers" @click="closeMegaMenu">Work Trousers</router-link>
+                <router-link to="/workwear/mens/coveralls" @click="closeMegaMenu">Coveralls</router-link>
+                <router-link to="/workwear/mens/hi-vis" @click="closeMegaMenu">Hi-Vis Clothing</router-link>
+                <router-link to="/workwear/mens/fleeces" @click="closeMegaMenu">Fleeces & Sweatshirts</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Women's Workwear</h4>
-                <router-link to="/workwear/womens/work-jackets">Work Jackets</router-link>
-                <router-link to="/workwear/womens/work-trousers">Work Trousers</router-link>
-                <router-link to="/workwear/womens/hi-vis">Hi-Vis Clothing</router-link>
-                <router-link to="/workwear/womens/fleeces">Fleeces & Sweatshirts</router-link>
+                <router-link to="/workwear/womens/work-jackets" @click="closeMegaMenu">Work Jackets</router-link>
+                <router-link to="/workwear/womens/work-trousers" @click="closeMegaMenu">Work Trousers</router-link>
+                <router-link to="/workwear/womens/hi-vis" @click="closeMegaMenu">Hi-Vis Clothing</router-link>
+                <router-link to="/workwear/womens/fleeces" @click="closeMegaMenu">Fleeces & Sweatshirts</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Corporate Wear</h4>
-                <router-link to="/workwear/corporate/shirts">Shirts</router-link>
-                <router-link to="/workwear/corporate/trousers">Trousers</router-link>
-                <router-link to="/workwear/corporate/polos">Polo Shirts</router-link>
-                <router-link to="/workwear/corporate/footwear">Corporate Footwear</router-link>
+                <router-link to="/workwear/corporate/shirts" @click="closeMegaMenu">Shirts</router-link>
+                <router-link to="/workwear/corporate/trousers" @click="closeMegaMenu">Trousers</router-link>
+                <router-link to="/workwear/corporate/polos" @click="closeMegaMenu">Polo Shirts</router-link>
+                <router-link to="/workwear/corporate/footwear" @click="closeMegaMenu">Corporate Footwear</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Featured Brands</h4>
-                <router-link to="/brands/dickies">Dickies</router-link>
-                <router-link to="/brands/snickers">Snickers</router-link>
-                <router-link to="/brands/portwest">Portwest</router-link>
-                <router-link to="/brands/helly-hansen">Helly Hansen</router-link>
-                <router-link to="/brands/regatta">Regatta</router-link>
+                <router-link to="/brands/dickies" @click="closeMegaMenu">Dickies</router-link>
+                <router-link to="/brands/snickers" @click="closeMegaMenu">Snickers</router-link>
+                <router-link to="/brands/portwest" @click="closeMegaMenu">Portwest</router-link>
+                <router-link to="/brands/helly-hansen" @click="closeMegaMenu">Helly Hansen</router-link>
+                <router-link to="/brands/regatta" @click="closeMegaMenu">Regatta</router-link>
               </div>
             </div>
           </li>
 
           <!-- Safetywear Mega Menu -->
-          <li class="nav-item mega-menu">
-            <a href="#" class="nav-link">Safetywear ▾</a>
-            <div class="mega-menu-content">
+          <li class="nav-item mega-menu" 
+              ref="safetywearMegaMenu"
+              @mouseenter="onDesktop && (activeMegaMenu = 'safetywear')"
+              @mouseleave="onDesktop && (activeMegaMenu = '')">
+            <a href="#" class="nav-link" @click.prevent="toggleMegaMenu('safetywear')">Safetywear ▾</a>
+            <div class="mega-menu-content" v-show="onDesktop ? activeMegaMenu === 'safetywear' : showMobileMegaMenu === 'safetywear'">
               <div class="mega-menu-column">
                 <h4>Head Protection</h4>
-                <router-link to="/safetywear/head/safety-helmets">Safety Helmets</router-link>
-                <router-link to="/safetywear/head/bump-caps">Bump Caps</router-link>
-                <router-link to="/safetywear/head/accessories">Accessories</router-link>
+                <router-link to="/safetywear/head/safety-helmets" @click="closeMegaMenu">Safety Helmets</router-link>
+                <router-link to="/safetywear/head/bump-caps" @click="closeMegaMenu">Bump Caps</router-link>
+                <router-link to="/safetywear/head/accessories" @click="closeMegaMenu">Accessories</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Eye & Face Protection</h4>
-                <router-link to="/safetywear/eye/safety-glasses">Safety Glasses</router-link>
-                <router-link to="/safetywear/eye/goggles">Goggles</router-link>
-                <router-link to="/safetywear/eye/face-shields">Face Shields</router-link>
+                <router-link to="/safetywear/eye/safety-glasses" @click="closeMegaMenu">Safety Glasses</router-link>
+                <router-link to="/safetywear/eye/goggles" @click="closeMegaMenu">Goggles</router-link>
+                <router-link to="/safetywear/eye/face-shields" @click="closeMegaMenu">Face Shields</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Hearing Protection</h4>
-                <router-link to="/safetywear/hearing/ear-defenders">Ear Defenders</router-link>
-                <router-link to="/safetywear/hearing/ear-plugs">Ear Plugs</router-link>
+                <router-link to="/safetywear/hearing/ear-defenders" @click="closeMegaMenu">Ear Defenders</router-link>
+                <router-link to="/safetywear/hearing/ear-plugs" @click="closeMegaMenu">Ear Plugs</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Respiratory Protection</h4>
-                <router-link to="/safetywear/respiratory/masks">Face Masks</router-link>
-                <router-link to="/safetywear/respiratory/respirators">Respirators</router-link>
+                <router-link to="/safetywear/respiratory/masks" @click="closeMegaMenu">Face Masks</router-link>
+                <router-link to="/safetywear/respiratory/respirators" @click="closeMegaMenu">Respirators</router-link>
               </div>
             </div>
           </li>
 
           <!-- Footwear Mega Menu -->
-          <li class="nav-item mega-menu">
-            <a href="#" class="nav-link">Footwear ▾</a>
-            <div class="mega-menu-content">
+          <li class="nav-item mega-menu" 
+              ref="footwearMegaMenu"
+              @mouseenter="onDesktop && (activeMegaMenu = 'footwear')"
+              @mouseleave="onDesktop && (activeMegaMenu = '')">
+            <a href="#" class="nav-link" @click.prevent="toggleMegaMenu('footwear')">Footwear ▾</a>
+            <div class="mega-menu-content" v-show="onDesktop ? activeMegaMenu === 'footwear' : showMobileMegaMenu === 'footwear'">
               <div class="mega-menu-column">
                 <h4>Safety Boots</h4>
-                <router-link to="/footwear/safety-boots/steel-toe">Steel Toe</router-link>
-                <router-link to="/footwear/safety-boots/composite-toe">Composite Toe</router-link>
-                <router-link to="/footwear/safety-boots/waterproof">Waterproof</router-link>
-                <router-link to="/footwear/safety-boots/anti-slip">Anti-Slip</router-link>
+                <router-link to="/footwear/safety-boots/steel-toe" @click="closeMegaMenu">Steel Toe</router-link>
+                <router-link to="/footwear/safety-boots/composite-toe" @click="closeMegaMenu">Composite Toe</router-link>
+                <router-link to="/footwear/safety-boots/waterproof" @click="closeMegaMenu">Waterproof</router-link>
+                <router-link to="/footwear/safety-boots/anti-slip" @click="closeMegaMenu">Anti-Slip</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Work Shoes</h4>
-                <router-link to="/footwear/work-shoes/safety-shoes">Safety Shoes</router-link>
-                <router-link to="/footwear/work-shoes/trainers">Work Trainers</router-link>
-                <router-link to="/footwear/work-shoes/casual">Casual Work Shoes</router-link>
+                <router-link to="/footwear/work-shoes/safety-shoes" @click="closeMegaMenu">Safety Shoes</router-link>
+                <router-link to="/footwear/work-shoes/trainers" @click="closeMegaMenu">Work Trainers</router-link>
+                <router-link to="/footwear/work-shoes/casual" @click="closeMegaMenu">Casual Work Shoes</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Wellies & Waders</h4>
-                <router-link to="/footwear/wellies/safety-wellies">Safety Wellies</router-link>
-                <router-link to="/footwear/wellies/standard">Standard Wellies</router-link>
-                <router-link to="/footwear/wellies/waders">Waders</router-link>
+                <router-link to="/footwear/wellies/safety-wellies" @click="closeMegaMenu">Safety Wellies</router-link>
+                <router-link to="/footwear/wellies/standard" @click="closeMegaMenu">Standard Wellies</router-link>
+                <router-link to="/footwear/wellies/waders" @click="closeMegaMenu">Waders</router-link>
               </div>
               <div class="mega-menu-column">
                 <h4>Featured Brands</h4>
-                <router-link to="/footwear/brands/dickies">Dickies</router-link>
-                <router-link to="/footwear/brands/skechers">Skechers</router-link>
-                <router-link to="/footwear/brands/cat">CAT</router-link>
-                <router-link to="/footwear/brands/dewalt">DeWalt</router-link>
+                <router-link to="/footwear/brands/dickies" @click="closeMegaMenu">Dickies</router-link>
+                <router-link to="/footwear/brands/skechers" @click="closeMegaMenu">Skechers</router-link>
+                <router-link to="/footwear/brands/cat" @click="closeMegaMenu">CAT</router-link>
+                <router-link to="/footwear/brands/dewalt" @click="closeMegaMenu">DeWalt</router-link>
               </div>
             </div>
           </li>
@@ -417,13 +444,6 @@
         </ul>
       </div>
     </nav>
-
-    <!-- Mobile Menu Toggle hamburger -->
-    <button class="mobile-menu-toggle" @click="toggleMobileMenu">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" :class="{ active: showMobileMenu }">
@@ -449,25 +469,90 @@
         <li><router-link to="/" @click="closeMobileMenu">Home</router-link></li>
 
         <li class="mobile-dropdown">
-          <a href="#" @click.prevent="toggleMobileDropdown('workwear')">Workwear ▸</a>
+          <a href="#" @click.prevent="toggleMobileDropdown('workwear')">
+            Workwear 
+            <span class="mobile-dropdown-arrow">{{ mobileDropdowns.workwear ? '▾' : '▸' }}</span>
+          </a>
           <ul class="mobile-submenu" v-if="mobileDropdowns.workwear">
-            <li>
-              <h5>Men's Workwear</h5>
-            </li>
+            <li><h5>Men's Workwear</h5></li>
             <li><router-link to="/workwear/mens/work-jackets" @click="closeMobileMenu">Work Jackets</router-link></li>
             <li><router-link to="/workwear/mens/work-trousers" @click="closeMobileMenu">Work Trousers</router-link></li>
-            <li>
-              <h5>Women's Workwear</h5>
-            </li>
+            <li><router-link to="/workwear/mens/coveralls" @click="closeMobileMenu">Coveralls</router-link></li>
+            <li><router-link to="/workwear/mens/hi-vis" @click="closeMobileMenu">Hi-Vis Clothing</router-link></li>
+            <li><router-link to="/workwear/mens/fleeces" @click="closeMobileMenu">Fleeces & Sweatshirts</router-link></li>
+            <li><h5>Women's Workwear</h5></li>
             <li><router-link to="/workwear/womens/work-jackets" @click="closeMobileMenu">Work Jackets</router-link></li>
-            <li><router-link to="/workwear/womens/work-trousers" @click="closeMobileMenu">Work Trousers</router-link>
-            </li>
+            <li><router-link to="/workwear/womens/work-trousers" @click="closeMobileMenu">Work Trousers</router-link></li>
+            <li><router-link to="/workwear/womens/hi-vis" @click="closeMobileMenu">Hi-Vis Clothing</router-link></li>
+            <li><router-link to="/workwear/womens/fleeces" @click="closeMobileMenu">Fleeces & Sweatshirts</router-link></li>
+            <li><h5>Corporate Wear</h5></li>
+            <li><router-link to="/workwear/corporate/shirts" @click="closeMobileMenu">Shirts</router-link></li>
+            <li><router-link to="/workwear/corporate/trousers" @click="closeMobileMenu">Trousers</router-link></li>
+            <li><router-link to="/workwear/corporate/polos" @click="closeMobileMenu">Polo Shirts</router-link></li>
+            <li><router-link to="/workwear/corporate/footwear" @click="closeMobileMenu">Corporate Footwear</router-link></li>
+            <li><h5>Featured Brands</h5></li>
+            <li><router-link to="/brands/dickies" @click="closeMobileMenu">Dickies</router-link></li>
+            <li><router-link to="/brands/snickers" @click="closeMobileMenu">Snickers</router-link></li>
+            <li><router-link to="/brands/portwest" @click="closeMobileMenu">Portwest</router-link></li>
+            <li><router-link to="/brands/helly-hansen" @click="closeMobileMenu">Helly Hansen</router-link></li>
+            <li><router-link to="/brands/regatta" @click="closeMobileMenu">Regatta</router-link></li>
+          </ul>
+        </li>
+
+        <li class="mobile-dropdown">
+          <a href="#" @click.prevent="toggleMobileDropdown('safetywear')">
+            Safetywear 
+            <span class="mobile-dropdown-arrow">{{ mobileDropdowns.safetywear ? '▾' : '▸' }}</span>
+          </a>
+          <ul class="mobile-submenu" v-if="mobileDropdowns.safetywear">
+            <li><h5>Head Protection</h5></li>
+            <li><router-link to="/safetywear/head/safety-helmets" @click="closeMobileMenu">Safety Helmets</router-link></li>
+            <li><router-link to="/safetywear/head/bump-caps" @click="closeMobileMenu">Bump Caps</router-link></li>
+            <li><router-link to="/safetywear/head/accessories" @click="closeMobileMenu">Accessories</router-link></li>
+            <li><h5>Eye & Face Protection</h5></li>
+            <li><router-link to="/safetywear/eye/safety-glasses" @click="closeMobileMenu">Safety Glasses</router-link></li>
+            <li><router-link to="/safetywear/eye/goggles" @click="closeMobileMenu">Goggles</router-link></li>
+            <li><router-link to="/safetywear/eye/face-shields" @click="closeMobileMenu">Face Shields</router-link></li>
+            <li><h5>Hearing Protection</h5></li>
+            <li><router-link to="/safetywear/hearing/ear-defenders" @click="closeMobileMenu">Ear Defenders</router-link></li>
+            <li><router-link to="/safetywear/hearing/ear-plugs" @click="closeMobileMenu">Ear Plugs</router-link></li>
+            <li><h5>Respiratory Protection</h5></li>
+            <li><router-link to="/safetywear/respiratory/masks" @click="closeMobileMenu">Face Masks</router-link></li>
+            <li><router-link to="/safetywear/respiratory/respirators" @click="closeMobileMenu">Respirators</router-link></li>
+          </ul>
+        </li>
+
+        <li class="mobile-dropdown">
+          <a href="#" @click.prevent="toggleMobileDropdown('footwear')">
+            Footwear 
+            <span class="mobile-dropdown-arrow">{{ mobileDropdowns.footwear ? '▾' : '▸' }}</span>
+          </a>
+          <ul class="mobile-submenu" v-if="mobileDropdowns.footwear">
+            <li><h5>Safety Boots</h5></li>
+            <li><router-link to="/footwear/safety-boots/steel-toe" @click="closeMobileMenu">Steel Toe</router-link></li>
+            <li><router-link to="/footwear/safety-boots/composite-toe" @click="closeMobileMenu">Composite Toe</router-link></li>
+            <li><router-link to="/footwear/safety-boots/waterproof" @click="closeMobileMenu">Waterproof</router-link></li>
+            <li><router-link to="/footwear/safety-boots/anti-slip" @click="closeMobileMenu">Anti-Slip</router-link></li>
+            <li><h5>Work Shoes</h5></li>
+            <li><router-link to="/footwear/work-shoes/safety-shoes" @click="closeMobileMenu">Safety Shoes</router-link></li>
+            <li><router-link to="/footwear/work-shoes/trainers" @click="closeMobileMenu">Work Trainers</router-link></li>
+            <li><router-link to="/footwear/work-shoes/casual" @click="closeMobileMenu">Casual Work Shoes</router-link></li>
+            <li><h5>Wellies & Waders</h5></li>
+            <li><router-link to="/footwear/wellies/safety-wellies" @click="closeMobileMenu">Safety Wellies</router-link></li>
+            <li><router-link to="/footwear/wellies/standard" @click="closeMobileMenu">Standard Wellies</router-link></li>
+            <li><router-link to="/footwear/wellies/waders" @click="closeMobileMenu">Waders</router-link></li>
+            <li><h5>Featured Brands</h5></li>
+            <li><router-link to="/footwear/brands/dickies" @click="closeMobileMenu">Dickies</router-link></li>
+            <li><router-link to="/footwear/brands/skechers" @click="closeMobileMenu">Skechers</router-link></li>
+            <li><router-link to="/footwear/brands/cat" @click="closeMobileMenu">CAT</router-link></li>
+            <li><router-link to="/footwear/brands/dewalt" @click="closeMobileMenu">DeWalt</router-link></li>
           </ul>
         </li>
 
         <li><router-link to="/ppe" @click="closeMobileMenu">PPE</router-link></li>
         <li><router-link to="/brands" @click="closeMobileMenu">Brands</router-link></li>
         <li><router-link to="/clearance" @click="closeMobileMenu" class="sale">Clearance</router-link></li>
+        <li><router-link to="/corporate" @click="closeMobileMenu">Corporate</router-link></li>
 
         <template v-if="!isAuthenticated">
           <li><router-link to="/login" @click="closeMobileMenu">Sign In</router-link></li>
@@ -483,7 +568,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useCartStore } from '@/store/cart'
@@ -494,20 +579,36 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
 
+// Refs
 const searchQuery = ref('')
 const mobileSearchQuery = ref('')
 const showMobileMenu = ref(false)
 const showCart = ref(false)
 const showProfileDropdown = ref(false)
 const showWishlistDropdown = ref(false)
+const activeMegaMenu = ref('')
+const showMobileMegaMenu = ref('')
+const onDesktop = ref(window.innerWidth > 768)
+
+// Timeout refs
 const hideCartTimeout = ref(null)
 const hideProfileTimeout = ref(null)
 const hideWishlistTimeout = ref(null)
+
+// Mobile dropdowns
 const mobileDropdowns = ref({
   workwear: false,
   safetywear: false,
   footwear: false
 })
+
+// Element refs
+const accountDropdown = ref(null)
+const wishlistDropdown = ref(null)
+const cartDropdown = ref(null)
+const workwearMegaMenu = ref(null)
+const safetywearMegaMenu = ref(null)
+const footwearMegaMenu = ref(null)
 
 // Computed properties
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -517,71 +618,116 @@ const cartTotal = computed(() => cartStore.totalItems)
 const cartItems = computed(() => cartStore.items.slice(0, 3))
 const cartSubtotal = computed(() => cartStore.subtotal.toFixed(2))
 
-// Profile Dropdown Methods
-const keepProfileDropdownOpen = () => {
+// Update desktop detection
+const updateDesktop = () => {
+  onDesktop.value = window.innerWidth > 768
+}
+
+// Desktop hover methods
+const hideProfileDropdown = () => {
+  if (onDesktop.value) {
+    hideProfileTimeout.value = setTimeout(() => {
+      showProfileDropdown.value = false
+    }, 300)
+  }
+}
+
+const hideWishlistDropdown = () => {
+  if (onDesktop.value) {
+    hideWishlistTimeout.value = setTimeout(() => {
+      showWishlistDropdown.value = false
+    }, 300)
+  }
+}
+
+const hideCartDelay = () => {
+  if (onDesktop.value) {
+    hideCartTimeout.value = setTimeout(() => {
+      showCart.value = false
+    }, 300)
+  }
+}
+
+// Clear timeouts when entering dropdown
+const clearProfileTimeout = () => {
   if (hideProfileTimeout.value) {
     clearTimeout(hideProfileTimeout.value)
     hideProfileTimeout.value = null
   }
-  showProfileDropdown.value = true
 }
 
-const hideProfileDropdown = () => {
-  hideProfileTimeout.value = setTimeout(() => {
-    showProfileDropdown.value = false
-  }, 300)
-}
-
-// Wishlist Dropdown Methods
-const keepWishlistDropdownOpen = () => {
+const clearWishlistTimeout = () => {
   if (hideWishlistTimeout.value) {
     clearTimeout(hideWishlistTimeout.value)
     hideWishlistTimeout.value = null
   }
-  showWishlistDropdown.value = true
 }
 
-const hideWishlistDropdown = () => {
-  hideWishlistTimeout.value = setTimeout(() => {
-    showWishlistDropdown.value = false
-  }, 300)
-}
-
-// Cart Dropdown Methods
-const keepCartOpen = () => {
+const clearCartTimeout = () => {
   if (hideCartTimeout.value) {
     clearTimeout(hideCartTimeout.value)
     hideCartTimeout.value = null
   }
-  showCart.value = true
+}
+
+// Toggle methods for mobile
+const toggleProfileDropdown = () => {
+  if (!onDesktop.value) {
+    showProfileDropdown.value = !showProfileDropdown.value
+    // Close other dropdowns
+    if (showProfileDropdown.value) {
+      showWishlistDropdown.value = false
+      showCart.value = false
+    }
+  }
+}
+
+const toggleWishlistDropdown = () => {
+  if (!onDesktop.value) {
+    showWishlistDropdown.value = !showWishlistDropdown.value
+    // Close other dropdowns
+    if (showWishlistDropdown.value) {
+      showProfileDropdown.value = false
+      showCart.value = false
+    }
+  }
+}
+
+const toggleCart = () => {
+  if (!onDesktop.value) {
+    showCart.value = !showCart.value
+    // Close other dropdowns
+    if (showCart.value) {
+      showProfileDropdown.value = false
+      showWishlistDropdown.value = false
+    }
+  }
+}
+
+const toggleMegaMenu = (menu) => {
+  if (!onDesktop.value) {
+    showMobileMegaMenu.value = showMobileMegaMenu.value === menu ? '' : menu
+  }
+}
+
+const closeMegaMenu = () => {
+  if (onDesktop.value) {
+    activeMegaMenu.value = ''
+  } else {
+    showMobileMegaMenu.value = ''
+  }
 }
 
 const hideCart = () => {
   showCart.value = false
 }
 
-const hideCartDelay = () => {
-  hideCartTimeout.value = setTimeout(() => {
-    showCart.value = false
-  }, 300)
-}
-
-const clearHideCartTimeout = () => {
-  if (hideCartTimeout.value) {
-    clearTimeout(hideCartTimeout.value)
-    hideCartTimeout.value = null
-  }
-}
-
 const logout = () => {
   authStore.logout()
   wishlistStore.clearWishlist()
-  hideProfileDropdown()
+  showProfileDropdown.value = false
+  closeMobileMenu()
   router.push('/')
-}
-
-const getProductImage = (item) => {
-  return item.image || 'https://images.unsplash.com/photo-1558769132-cb1aedeedd98?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80'
 }
 
 const performSearch = () => {
@@ -605,13 +751,38 @@ const toggleMobileMenu = () => {
 
 const closeMobileMenu = () => {
   showMobileMenu.value = false
+  // Reset all mobile dropdowns
   Object.keys(mobileDropdowns.value).forEach(key => {
     mobileDropdowns.value[key] = false
   })
+  showMobileMegaMenu.value = ''
 }
 
 const toggleMobileDropdown = (dropdown) => {
-  mobileDropdowns.value[dropdown] = !mobileDropdowns.value[dropdown]
+  // Close other dropdowns
+  Object.keys(mobileDropdowns.value).forEach(key => {
+    mobileDropdowns.value[key] = key === dropdown ? !mobileDropdowns.value[key] : false
+  })
+}
+
+// Close dropdowns when clicking outside
+const handleClickOutside = (event) => {
+  if (onDesktop.value) return
+
+  const isClickInsideDropdown = 
+    (accountDropdown.value && accountDropdown.value.contains(event.target)) ||
+    (wishlistDropdown.value && wishlistDropdown.value.contains(event.target)) ||
+    (cartDropdown.value && cartDropdown.value.contains(event.target)) ||
+    (workwearMegaMenu.value && workwearMegaMenu.value.contains(event.target)) ||
+    (safetywearMegaMenu.value && safetywearMegaMenu.value.contains(event.target)) ||
+    (footwearMegaMenu.value && footwearMegaMenu.value.contains(event.target))
+
+  if (!isClickInsideDropdown) {
+    showProfileDropdown.value = false
+    showWishlistDropdown.value = false
+    showCart.value = false
+    showMobileMegaMenu.value = ''
+  }
 }
 
 // Initialize
@@ -619,6 +790,8 @@ onMounted(() => {
   authStore.hydrate()
   cartStore.hydrate()
   wishlistStore.loadWishlist()
+  window.addEventListener('resize', updateDesktop)
+  document.addEventListener('click', handleClickOutside)
 })
 
 // Cleanup
@@ -626,6 +799,8 @@ onUnmounted(() => {
   if (hideCartTimeout.value) clearTimeout(hideCartTimeout.value)
   if (hideProfileTimeout.value) clearTimeout(hideProfileTimeout.value)
   if (hideWishlistTimeout.value) clearTimeout(hideWishlistTimeout.value)
+  window.removeEventListener('resize', updateDesktop)
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 

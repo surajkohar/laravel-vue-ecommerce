@@ -40,9 +40,15 @@ class ProductsController extends ApiController
     public function index(Request $request)
     {
         try {
-            $query = Products::with(['category', 'brands', 'variants.sizes' => function($q) {
-                $q->withPivot(['stock', 'price']);
-            }])
+            $query = Products::with([
+                'category',
+                'brands',
+                'variants' => function ($query) {
+                    $query->with(['sizes' => function ($q) {
+                        $q->withPivot(['stock', 'price']);
+                    }]);
+                }
+            ])
                 ->where('status', true)
                 ->orderBy('created', 'desc');
 
@@ -99,35 +105,65 @@ class ProductsController extends ApiController
 
             // Format response
             $formattedProducts = $products->map(function ($product) {
-                // Calculate total stock from variants (size_stock)
-                $totalStock = $product->stock; // Base stock
-
-                // Add variant stock from pivot table
-                foreach ($product->variants as $variant) {
-                    foreach ($variant->sizes as $size) {
-                        $totalStock += $size->pivot->stock ?? 0;
-                    }
-                }
-
-                // Calculate if product has any stock
+                $totalStock = $product->stock;
                 $hasStock = $totalStock > 0;
 
-                // Calculate price range from variants
+                // Calculate price range and prepare variant data
                 $minPrice = $product->price;
                 $maxPrice = $product->price;
+                $variantsData = [];
 
                 if ($product->variants->isNotEmpty()) {
                     $variantPrices = [];
+                    $anyVariantHasStock = false; // Track if ANY variant has stock
+
                     foreach ($product->variants as $variant) {
+                        $variantStock = 0;
+                        $availableSizes = [];
+
                         foreach ($variant->sizes as $size) {
+                            $sizeStock = $size->pivot->stock ?? 0;
+                            $variantStock += $sizeStock;
+                            $totalStock += $sizeStock;
+
+                            if ($sizeStock > 0) {
+                                $anyVariantHasStock = true; // Mark that we found stock
+                                $availableSizes[] = [
+                                    'id' => $size->id,
+                                    'size_title' => $size->size_title,
+                                    'price' => $size->pivot->price ?? $product->price,
+                                    'stock' => $sizeStock,
+                                    'has_stock' => $sizeStock > 0,
+                                ];
+                            }
+
                             $variantPrices[] = $size->pivot->price ?? $product->price;
                         }
+
+                        $variantsData[] = [
+                            'id' => $variant->id,
+                            'color' => $variant->color,
+                            'color_name' => $variant->color_name,
+                            'has_stock' => $variantStock > 0,
+                            'sizes' => $availableSizes,
+                        ];
                     }
 
                     if (!empty($variantPrices)) {
                         $minPrice = min($variantPrices);
                         $maxPrice = max($variantPrices);
                     }
+
+                    // IMPORTANT: If product has variants, has_stock should be based on variant stock only
+                    $hasStock = $anyVariantHasStock;
+                }
+
+                // If min_price is 0.00, set it to product price
+                if ($minPrice == 0.00 || $minPrice == '0.00') {
+                    $minPrice = $product->price;
+                }
+                if ($maxPrice == 0.00 || $maxPrice == '0.00') {
+                    $maxPrice = $product->price;
                 }
 
                 return [
@@ -139,7 +175,7 @@ class ProductsController extends ApiController
                     'purchase_price' => $product->purchase_price,
                     'sku' => $product->sku,
                     'stock' => $totalStock,
-                    'has_stock' => $hasStock,
+                    'has_stock' => $hasStock, // Correctly calculated
                     'gender' => $product->gender,
                     'status' => $product->status,
                     'category_id' => $product->category_id,
@@ -151,6 +187,7 @@ class ProductsController extends ApiController
                         : asset('images/default-product.jpg'),
                     'min_price' => $minPrice,
                     'max_price' => $maxPrice,
+                    'variants' => $variantsData,
                     'created_at' => $product->created,
                     'updated_at' => $product->updated_at,
                 ];
@@ -183,42 +220,81 @@ class ProductsController extends ApiController
     public function featured()
     {
         try {
-            $products = Products::with(['category', 'brands', 'variants.sizes' => function($q) {
-                $q->withPivot(['stock', 'price']);
-            }])
+            $products = Products::with([
+                'category',
+                'brands',
+                'variants' => function ($query) {
+                    $query->with(['sizes' => function ($q) {
+                        $q->withPivot(['stock', 'price']);
+                    }]);
+                }
+            ])
                 ->where('status', true)
                 ->limit(12)
                 ->orderBy('created', 'desc')
                 ->get();
 
             $formattedProducts = $products->map(function ($product) {
-                // Calculate total stock from variants
                 $totalStock = $product->stock;
-
-                foreach ($product->variants as $variant) {
-                    foreach ($variant->sizes as $size) {
-                        $totalStock += $size->pivot->stock ?? 0;
-                    }
-                }
-
                 $hasStock = $totalStock > 0;
 
-                // Calculate price range
+                // Calculate price range and prepare variant data
                 $minPrice = $product->price;
                 $maxPrice = $product->price;
+                $variantsData = [];
 
                 if ($product->variants->isNotEmpty()) {
                     $variantPrices = [];
+                    $anyVariantHasStock = false; // Track if ANY variant has stock
+
                     foreach ($product->variants as $variant) {
+                        $variantStock = 0;
+                        $availableSizes = [];
+
                         foreach ($variant->sizes as $size) {
+                            $sizeStock = $size->pivot->stock ?? 0;
+                            $variantStock += $sizeStock;
+                            $totalStock += $sizeStock;
+
+                            if ($sizeStock > 0) {
+                                $anyVariantHasStock = true; // Mark that we found stock
+                                $availableSizes[] = [
+                                    'id' => $size->id,
+                                    'size_title' => $size->size_title,
+                                    'price' => $size->pivot->price ?? $product->price,
+                                    'stock' => $sizeStock,
+                                    'has_stock' => $sizeStock > 0,
+                                ];
+                            }
+
                             $variantPrices[] = $size->pivot->price ?? $product->price;
                         }
+
+                        $variantsData[] = [
+                            'id' => $variant->id,
+                            'color' => $variant->color,
+                            'color_name' => $variant->color_name,
+                            'has_stock' => $variantStock > 0, // Correctly set variant has_stock
+                            'sizes' => $availableSizes,
+                        ];
                     }
 
                     if (!empty($variantPrices)) {
                         $minPrice = min($variantPrices);
                         $maxPrice = max($variantPrices);
                     }
+
+                    // IMPORTANT: If product has variants, has_stock should be based on variant stock only
+                    // This is the key fix - ignore main product stock when there are variants
+                    $hasStock = $anyVariantHasStock;
+                }
+
+                // If min_price is 0.00, set it to product price
+                if ($minPrice == 0.00 || $minPrice == '0.00') {
+                    $minPrice = $product->price;
+                }
+                if ($maxPrice == 0.00 || $maxPrice == '0.00') {
+                    $maxPrice = $product->price;
                 }
 
                 return [
@@ -229,7 +305,7 @@ class ProductsController extends ApiController
                     'price' => $product->price,
                     'sku' => $product->sku,
                     'stock' => $totalStock,
-                    'has_stock' => $hasStock,
+                    'has_stock' => $hasStock, // This will now be correct
                     'category_title' => $product->category->title ?? '',
                     'brand_title' => $product->brands->title ?? '',
                     'main_image_url' => $product->main_image_name
@@ -237,6 +313,7 @@ class ProductsController extends ApiController
                         : asset('images/default-product.jpg'),
                     'min_price' => $minPrice,
                     'max_price' => $maxPrice,
+                    'variants' => $variantsData,
                 ];
             });
 
@@ -262,7 +339,7 @@ class ProductsController extends ApiController
             $product = Products::with([
                 'category',
                 'subcategories',
-                'variants' => function($query) {
+                'variants' => function ($query) {
                     $query->orderBy('color_name');
                 },
                 'variants.sizes' => function ($query) {
@@ -392,7 +469,7 @@ class ProductsController extends ApiController
     public function showById($id)
     {
         try {
-            $product = Products::with(['category', 'brands', 'variants.sizes' => function($q) {
+            $product = Products::with(['category', 'brands', 'variants.sizes' => function ($q) {
                 $q->withPivot(['stock', 'price']);
             }])
                 ->where('id', $id)
@@ -451,7 +528,7 @@ class ProductsController extends ApiController
                 ]);
             }
 
-            $products = Products::with(['category', 'brands', 'variants.sizes' => function($q) {
+            $products = Products::with(['category', 'brands', 'variants.sizes' => function ($q) {
                 $q->withPivot(['stock', 'price']);
             }])
                 ->where('status', true)
@@ -509,7 +586,7 @@ class ProductsController extends ApiController
             $currentProduct = Products::findOrFail($id);
             $categoryId = $request->get('category', $currentProduct->category_id);
 
-            $relatedProducts = Products::with(['category', 'brands', 'variants.sizes' => function($q) {
+            $relatedProducts = Products::with(['category', 'brands', 'variants.sizes' => function ($q) {
                 $q->withPivot(['stock', 'price']);
             }])
                 ->where('status', true)
@@ -559,41 +636,113 @@ class ProductsController extends ApiController
     /**
      * Helper function to get related products
      */
-    private function getRelatedProducts($categoryId, $excludeId, $limit = 4)
-    {
-        return Products::with(['category', 'brands', 'variants.sizes' => function($q) {
-            $q->withPivot(['stock', 'price']);
-        }])
-            ->where('status', true)
-            ->where('category_id', $categoryId)
-            ->where('id', '!=', $excludeId)
-            ->limit($limit)
-            ->inRandomOrder()
-            ->get()
-            ->map(function ($product) {
-                // Calculate total stock
-                $totalStock = $product->stock;
+private function getRelatedProducts($categoryId, $excludeId, $limit = 4)
+{
+    return Products::with([
+        'category',
+        'brands',
+        'variants' => function($query) {
+            $query->with(['sizes' => function($q) {
+                $q->withPivot(['stock', 'price']);
+            }]);
+        }
+    ])
+        ->where('status', true)
+        ->where('category_id', $categoryId)
+        ->where('id', '!=', $excludeId)
+        ->limit($limit)
+        ->inRandomOrder()
+        ->get()
+        ->map(function ($product) {
+            $totalStock = $product->stock;
+            $hasStock = $totalStock > 0;
+
+            // Calculate price range and variant data
+            $minPrice = $product->price;
+            $maxPrice = $product->price;
+
+            if ($product->variants->isNotEmpty()) {
+                $variantPrices = [];
+                $anyVariantHasStock = false; // Track if ANY variant has stock
+
                 foreach ($product->variants as $variant) {
+                    $variantStock = 0;
+
                     foreach ($variant->sizes as $size) {
-                        $totalStock += $size->pivot->stock ?? 0;
+                        $sizeStock = $size->pivot->stock ?? 0;
+                        $variantStock += $sizeStock;
+                        $totalStock += $sizeStock;
+
+                        if ($sizeStock > 0) {
+                            $anyVariantHasStock = true;
+                        }
+
+                        $variantPrices[] = $size->pivot->price ?? $product->price;
                     }
                 }
 
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'slug' => $product->slug,
-                    'price' => $product->price,
-                    'stock' => $totalStock,
-                    'has_stock' => $totalStock > 0,
-                    'main_image_url' => $product->main_image_name
-                        ? asset('storage/' . $product->main_image_name)
-                        : asset('images/default-product.jpg'),
-                    'category_title' => $product->category->title ?? '',
-                    'brand_title' => $product->brands->title ?? '',
-                ];
-            });
-    }
+                if (!empty($variantPrices)) {
+                    $minPrice = min($variantPrices);
+                    $maxPrice = max($variantPrices);
+                }
+
+                // If product has variants, has_stock should be based on variant stock only
+                $hasStock = $anyVariantHasStock;
+            }
+
+            // If min_price is 0.00, set it to product price
+            if ($minPrice == 0.00 || $minPrice == '0.00') {
+                $minPrice = $product->price;
+            }
+            if ($maxPrice == 0.00 || $maxPrice == '0.00') {
+                $maxPrice = $product->price;
+            }
+
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'price' => $product->price,
+                'stock' => $totalStock,
+                'has_stock' => $hasStock, // Correctly calculated
+                'main_image_url' => $product->main_image_name
+                    ? asset('storage/' . $product->main_image_name)
+                    : asset('images/default-product.jpg'),
+                'category_title' => $product->category->title ?? '',
+                'brand_title' => $product->brands->title ?? '',
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
+                // Include variant data if needed by frontend
+                'variants' => $product->variants->map(function ($variant) {
+                    $variantStock = 0;
+                    $availableSizes = [];
+
+                    foreach ($variant->sizes as $size) {
+                        $sizeStock = $size->pivot->stock ?? 0;
+                        $variantStock += $sizeStock;
+
+                        if ($sizeStock > 0) {
+                            $availableSizes[] = [
+                                'id' => $size->id,
+                                'size_title' => $size->size_title,
+                                'price' => $size->pivot->price ?? 0,
+                                'stock' => $sizeStock,
+                                'has_stock' => $sizeStock > 0,
+                            ];
+                        }
+                    }
+
+                    return [
+                        'id' => $variant->id,
+                        'color' => $variant->color,
+                        'color_name' => $variant->color_name,
+                        'has_stock' => $variantStock > 0,
+                        'sizes' => $availableSizes,
+                    ];
+                })->toArray(),
+            ];
+        });
+}
 
     /**
      * Get categories
